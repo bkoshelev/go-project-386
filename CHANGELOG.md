@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.0](https://github.com/bkoshelev/go-project-386/compare/v0.1.0...v0.2.0) (2026-09-17)
+
+
+### Features
+
+* add standalone Go backend ([608b720](https://github.com/bkoshelev/go-project-386/commit/608b72007240e25e044d589a221b0388b18ae13b))
+* add standalone Go backend ([17e5d8c](https://github.com/bkoshelev/go-project-386/commit/17e5d8ca31152f257c2eb1ee16036436070348b1))
+
 ## 0.1.0 (2026-09-17)
 
 
