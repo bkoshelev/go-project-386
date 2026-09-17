@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/bkoshelev/go-project-386/compare/v0.2.0...v0.3.0) (2026-09-17)
+
+
+### Features
+
+* **frontend:** add linting quality gate ([80bcd7c](https://github.com/bkoshelev/go-project-386/commit/80bcd7cd78f03e9e64d80253e41b2bc03e117060))
+* **frontend:** add linting quality gate ([1800ac0](https://github.com/bkoshelev/go-project-386/commit/1800ac06a7ccc3163cc5277fc9c256ec0e660f47))
+
 ## [0.2.0](https://github.com/bkoshelev/go-project-386/compare/v0.1.0...v0.2.0) (2026-09-17)
 
 
