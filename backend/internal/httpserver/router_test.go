@@ -15,7 +15,7 @@ import (
 
 func TestSmokeHealth(t *testing.T) {
 	router := newTestRouter(t, io.Discard)
-	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
 	response := httptest.NewRecorder()
 
 	router.ServeHTTP(response, request)
@@ -28,7 +28,12 @@ func TestSmokeHealth(t *testing.T) {
 func TestAccessLogContainsRequestMetadataWithoutSensitiveData(t *testing.T) {
 	var output bytes.Buffer
 	router := newTestRouter(t, &output)
-	request := httptest.NewRequest(http.MethodGet, "/healthz?token=secret-query", strings.NewReader("secret-body"))
+	request := httptest.NewRequestWithContext(
+		t.Context(),
+		http.MethodGet,
+		"/healthz?token=secret-query",
+		strings.NewReader("secret-body"),
+	)
 	request.Header.Set("Authorization", "secret-header")
 	response := httptest.NewRecorder()
 
@@ -52,7 +57,8 @@ func TestRecoveryReturnsInternalServerErrorAndKeepsServing(t *testing.T) {
 	})
 
 	panicResponse := httptest.NewRecorder()
-	router.ServeHTTP(panicResponse, httptest.NewRequest(http.MethodGet, "/panic", nil))
+	panicRequest := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/panic", nil)
+	router.ServeHTTP(panicResponse, panicRequest)
 
 	require.Equal(t, http.StatusInternalServerError, panicResponse.Code)
 	require.Empty(t, panicResponse.Body.String())
@@ -60,7 +66,8 @@ func TestRecoveryReturnsInternalServerErrorAndKeepsServing(t *testing.T) {
 	require.Contains(t, output.String(), `"panic":"test panic"`)
 
 	healthResponse := httptest.NewRecorder()
-	router.ServeHTTP(healthResponse, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+	healthRequest := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil)
+	router.ServeHTTP(healthResponse, healthRequest)
 
 	require.Equal(t, http.StatusOK, healthResponse.Code)
 }

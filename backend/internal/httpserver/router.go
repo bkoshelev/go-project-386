@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// NewRouter creates the backend HTTP router with logging and panic recovery.
 func NewRouter(logger *slog.Logger, mode string) (*gin.Engine, error) {
 	gin.SetMode(mode)
 
