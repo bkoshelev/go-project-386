@@ -1,8 +1,8 @@
-import { Button, Container, Modal, Paper, Stack, Text, Title } from '@mantine/core'
-import { useDisclosure } from '@mantine/hooks'
+import { Button, Container, Modal, Paper, Stack, Text, Title } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 
 export function App() {
-  const [opened, { open, close }] = useDisclosure(false)
+  const [opened, { open, close }] = useDisclosure(false);
 
   return (
     <main className="page">
@@ -22,5 +22,5 @@ export function App() {
         <Text>React и компоненты Mantine успешно подключены.</Text>
       </Modal>
     </main>
-  )
+  );
 }

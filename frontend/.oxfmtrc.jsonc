@@ -1,0 +1,31 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  // Ограничивает ширину строки стандартными для проекта 100 символами.
+  "printWidth": 100,
+  // Использует два пробела на уровень вложенности.
+  "tabWidth": 2,
+  // Оставляет пробелы вместо табуляции во всех поддерживаемых форматах.
+  "useTabs": false,
+  // Добавляет точки с запятой в JavaScript и TypeScript.
+  "semi": true,
+  // Использует двойные кавычки в JavaScript, TypeScript и CSS.
+  "singleQuote": false,
+  // Добавляет завершающие запятые во всех поддерживаемых многострочных конструкциях.
+  "trailingComma": "all",
+  // Не сортирует импорты, чтобы сохранить значимый порядок Mantine CSS и локальных стилей.
+  "sortImports": false,
+  // Сохраняет стандартную сортировку полей package.json.
+  "sortPackageJson": true,
+  // Не форматирует зависимости, результаты инструментов, документацию, lock-файл и сгенерированные файлы.
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "playwright-report/",
+    "test-results/",
+    "blob-report/",
+    "coverage/",
+    "pnpm-lock.yaml",
+    "**/*.md",
+    "**/*.generated.*",
+  ],
+}
