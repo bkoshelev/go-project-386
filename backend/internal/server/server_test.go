@@ -59,17 +59,13 @@ func TestGracefulShutdownCompletesActiveRequest(t *testing.T) {
 		serverDone <- server.serve(ctx, listener)
 	}()
 
-	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+listener.Addr().String(), nil)
-	require.NoError(t, err)
 	responseDone := make(chan error, 1)
 	go func() {
-		response, err := http.DefaultClient.Do(request)
+		response, err := http.Get("http://" + listener.Addr().String())
 		if err == nil {
+			response.Body.Close()
 			if response.StatusCode != http.StatusNoContent {
 				err = &unexpectedStatusError{status: response.StatusCode}
-			}
-			if closeErr := response.Body.Close(); err == nil {
-				err = closeErr
 			}
 		}
 		responseDone <- err
@@ -105,15 +101,11 @@ func TestShutdownTimeoutForcesConnectionsClosed(t *testing.T) {
 		serverDone <- server.serve(ctx, listener)
 	}()
 
-	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+listener.Addr().String(), nil)
-	require.NoError(t, err)
 	responseDone := make(chan error, 1)
 	go func() {
-		response, err := http.DefaultClient.Do(request)
+		response, err := http.Get("http://" + listener.Addr().String())
 		if response != nil {
-			if closeErr := response.Body.Close(); err == nil {
-				err = closeErr
-			}
+			response.Body.Close()
 		}
 		responseDone <- err
 	}()
@@ -129,14 +121,10 @@ func TestShutdownTimeoutForcesConnectionsClosed(t *testing.T) {
 func listenLocal(t *testing.T) net.Listener {
 	t.Helper()
 
-	var listenConfig net.ListenConfig
-	listener, err := listenConfig.Listen(t.Context(), "tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		if closeErr := listener.Close(); closeErr != nil {
-			// The server can close its listener before test cleanup runs.
-			require.ErrorIs(t, closeErr, net.ErrClosed)
-		}
+		_ = listener.Close()
 	})
 
 	return listener

@@ -7,11 +7,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gin-gonic/gin"
-
 	"github.com/bkoshelev/go-project-386/backend/internal/config"
 	"github.com/bkoshelev/go-project-386/backend/internal/httpserver"
 	"github.com/bkoshelev/go-project-386/backend/internal/server"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
