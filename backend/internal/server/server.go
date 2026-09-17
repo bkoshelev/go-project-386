@@ -11,19 +11,26 @@ import (
 )
 
 const (
+	// ReadHeaderTimeout limits how long the server waits for request headers.
 	ReadHeaderTimeout = 5 * time.Second
-	ReadTimeout       = 10 * time.Second
-	WriteTimeout      = 10 * time.Second
-	IdleTimeout       = 60 * time.Second
-	ShutdownTimeout   = 10 * time.Second
+	// ReadTimeout limits how long the server spends reading a request.
+	ReadTimeout = 10 * time.Second
+	// WriteTimeout limits how long the server spends writing a response.
+	WriteTimeout = 10 * time.Second
+	// IdleTimeout limits how long an idle keep-alive connection remains open.
+	IdleTimeout = 60 * time.Second
+	// ShutdownTimeout limits graceful shutdown before connections are forced closed.
+	ShutdownTimeout = 10 * time.Second
 )
 
+// Server runs the backend HTTP server and coordinates its graceful shutdown.
 type Server struct {
 	httpServer      *http.Server
 	logger          *slog.Logger
 	shutdownTimeout time.Duration
 }
 
+// New creates a Server listening on addr with the standard timeouts.
 func New(addr string, handler http.Handler, logger *slog.Logger) *Server {
 	return newWithShutdownTimeout(addr, handler, logger, ShutdownTimeout)
 }
@@ -43,8 +50,10 @@ func newWithShutdownTimeout(addr string, handler http.Handler, logger *slog.Logg
 	}
 }
 
+// Run serves requests until ctx is canceled or the HTTP server stops.
 func (s *Server) Run(ctx context.Context) error {
-	listener, err := net.Listen("tcp", s.httpServer.Addr)
+	var listenConfig net.ListenConfig
+	listener, err := listenConfig.Listen(ctx, "tcp", s.httpServer.Addr)
 	if err != nil {
 		return fmt.Errorf("listen on %q: %w", s.httpServer.Addr, err)
 	}

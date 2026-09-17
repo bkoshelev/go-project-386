@@ -24,14 +24,6 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Check formatting
-        run: |
-          files="$(gofmt -l .)"
-          if [ -n "$files" ]; then
-            echo "$files"
-            exit 1
-          fi
-
       - name: Run go vet
         run: go vet ./...
 
@@ -40,3 +32,45 @@ jobs:
 
       - name: Build packages
         run: go build ./...
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Install pinned backend tools
+        run: make tools
+        working-directory: ${{ github.workspace }}
+
+      - name: Run backend linters
+        run: make lint
+        working-directory: ${{ github.workspace }}
+
+  govulncheck:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Install pinned backend tools
+        run: make tools
+        working-directory: ${{ github.workspace }}
+
+      - name: Scan backend for known vulnerabilities
+        run: make vuln
+        working-directory: ${{ github.workspace }}
