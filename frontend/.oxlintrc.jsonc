@@ -1,0 +1,77 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Категория correctness включает надёжные проверки явных ошибок для базовых правил и всех плагинов ниже.
+  "categories": {
+    "correctness": "error",
+  },
+  // Плагины проверяют TypeScript, React и Hooks, доступность JSX и распространённые ошибки JavaScript.
+  "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y"],
+  // Исходники приложения выполняются в браузере, поэтому его глобальные объекты разрешены по умолчанию.
+  "env": {
+    "browser": true,
+  },
+  "options": {
+    // Типовая информация нужна для правил, которые не могут проверить Promise только по синтаксису.
+    "typeAware": true,
+    // Любое предупреждение завершает проверку ошибкой и не создаёт постепенно растущий долг.
+    "denyWarnings": true,
+    // Неиспользуемое подавление считается ошибкой, чтобы исключения не переживали устраняемый код.
+    "reportUnusedDisableDirectives": "error",
+  },
+  "rules": {
+    // Запрещает вызывать Hooks вне компонента или пользовательского Hook.
+    "react/rules-of-hooks": "error",
+    // Проверяет полноту зависимостей React Hooks и предотвращает устаревшие замыкания.
+    "react/exhaustive-deps": "error",
+    // Отключает диагностику границ ошибок, зависящую от экспериментального React Compiler.
+    "react/error-boundaries": "off",
+    // Отключает compiler-проверку изменения глобальных значений во время render.
+    "react/globals": "off",
+    // Отключает compiler-проверку мутаций значений, пока React Compiler не используется.
+    "react/immutability": "off",
+    // Отключает compiler-проверку библиотек на совместимость с автоматической мемоизацией.
+    "react/incompatible-library": "off",
+    // Отключает compiler-проверку сохранения ручной мемоизации.
+    "react/preserve-manual-memoization": "off",
+    // Отключает compiler-проверку чистоты render-функций.
+    "react/purity": "off",
+    // Отключает compiler-проверку чтения и записи React refs во время render.
+    "react/refs": "off",
+    // Отключает compiler-проверку синхронного setState внутри effect.
+    "react/set-state-in-effect": "off",
+    // Отключает compiler-проверку setState во время render.
+    "react/set-state-in-render": "off",
+    // Отключает compiler-проверку создания компонентов внутри render.
+    "react/static-components": "off",
+    // Отключает compiler-проверку пока не поддерживаемого компилятором синтаксиса.
+    "react/unsupported-syntax": "off",
+    // Отключает compiler-проверку результата useMemo.
+    "react/use-memo": "off",
+    // Отключает compiler-проверку useMemo без используемого результата.
+    "react/void-use-memo": "off",
+    // Требует ожидать или обработать Promise; ignoreVoid: false не считает `void promise` обработкой ошибки.
+    "typescript/no-floating-promises": ["error", { "ignoreVoid": false }],
+    // Запрещает Promise там, где ожидается синхронное значение, включая JSX-обработчики событий.
+    "typescript/no-misused-promises": "error",
+  },
+  "overrides": [
+    {
+      "files": ["*.config.{js,mjs,cjs,ts,mts,cts}", "tests/**/*.{js,mjs,cjs,ts,mts,cts}"],
+      // Конфигурация и Playwright runner выполняются в Node.js, а не в окружении страницы приложения.
+      "env": {
+        "browser": false,
+        "node": true,
+      },
+    },
+  ],
+  // Сторонний код, сборка и отчёты генерируются другими инструментами и не проверяются Oxlint.
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "playwright-report/",
+    "test-results/",
+    "blob-report/",
+    "coverage/",
+    "**/*.generated.*",
+  ],
+}
