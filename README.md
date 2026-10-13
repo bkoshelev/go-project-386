@@ -78,6 +78,51 @@ cd backend
 go mod download
 ```
 
+### Подготовка worktree в Orca
+
+В поле **Setup Script** укажите:
+
+```bash
+bash "$ORCA_WORKTREE_PATH/scripts/setup-worktree.sh"
+```
+
+Скрипт проверяет закреплённые версии Go, Node.js и pnpm, скачивает Go-модули,
+устанавливает backend-инструменты, frontend-зависимости вместе с devDependencies
+и Chromium для Playwright. Повторный запуск допускается; backend-инструменты
+нужных версий повторно не устанавливаются. Скрипт должен присутствовать в ветке,
+из которой создаётся worktree.
+
+Go, Node.js и pnpm нужно заранее установить. Скрипт выбирает закреплённый Node.js
+из `${NVM_DIR:-$HOME/.nvm}/versions/node/` вместе с установленным для него pnpm,
+а Go — из `$HOME/sdk/go<версия>/bin/go`, если эти установки существуют.
+Для остальных способов установки команды должны быть доступны в `PATH` Orca.
+Bash-скрипт не загружает настройки интерактивного shell или `nvm`.
+Также нужны утилиты для `make tools` и C-компилятор, указанный в `go env CC`;
+`CGO_ENABLED` должен быть равен `1` для тестов с детектором гонок. Отдельную
+установку Go можно указать через `GO=/absolute/path/to/go`.
+На Linux системные библиотеки Chromium нужно предварительно установить командой
+`pnpm exec playwright install-deps chromium` из `frontend/`; она может потребовать
+прав администратора.
+
+Для запуска проверок после установки добавьте `SETUP_VERIFY=1`:
+
+```bash
+SETUP_VERIFY=1 bash "$ORCA_WORKTREE_PATH/scripts/setup-worktree.sh"
+```
+
+Этот режим выполняет `make check`, `pnpm check` и `pnpm test:smoke`.
+Smoke-тесту нужен свободный порт `4173`. Ошибки установки или проверок завершают
+скрипт с ненулевым кодом и сообщением о текущем этапе.
+
+Для ручного запуска из корня репозитория:
+
+```bash
+ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
+```
+
+`ORCA_WORKSPACE_NAME` используется в сообщении о начале подготовки.
+`ORCA_ROOT_PATH` пока не требуется: env-файлов и миграций в проекте нет.
+
 ## Использование
 
 <!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
