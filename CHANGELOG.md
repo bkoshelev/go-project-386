@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/bkoshelev/go-project-386/compare/v0.3.0...v0.3.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **backend:** update quic-go vulnerability patch ([57161c8](https://github.com/bkoshelev/go-project-386/commit/57161c8c8422d1a89688db93b626011042669df1))
+
 ## [0.3.0](https://github.com/bkoshelev/go-project-386/compare/v0.2.0...v0.3.0) (2026-09-17)
 
 
