@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# Проверки должны использовать установленный из go.mod Go без автоматической смены toolchain.
+env:
+  GOTOOLCHAIN: local
+
 jobs:
   checks:
     runs-on: ubuntu-latest
@@ -20,6 +24,10 @@ jobs:
         with:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
+
+      - name: Verify pinned Go version
+        run: make check-go-version
+        working-directory: ${{ github.workspace }}
 
       - name: Download dependencies
         run: go mod download

@@ -1,5 +1,7 @@
+# Сохраняем путь Makefile для рекурсивных вызовов из любого рабочего каталога.
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 # Все пути вычисляются от расположения Makefile, поэтому цели можно вызывать из любого каталога.
-ROOT_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+ROOT_DIR := $(abspath $(dir $(MAKEFILE_PATH)))
 # Go-модуль backend остаётся изолированным от frontend.
 BACKEND_DIR := $(ROOT_DIR)/backend
 # Закреплённые бинарники проекта не зависят от содержимого глобального PATH.
@@ -7,9 +9,9 @@ TOOLS_DIR := $(BACKEND_DIR)/bin/tools
 # Команда Go задаётся явно при необходимости, но всегда проверяется на точную целевую версию.
 GO ?= go
 # Дочерние процессы анализаторов используют тот же проверенный Go, а не другой бинарник из PATH.
-GO_BIN_DIR := $(shell $(GO) env GOROOT 2>/dev/null)/bin
-# Целевая версия приложения едина для установки инструментов и всех проверок.
-GO_VERSION := 1.26.8
+GO_BIN_DIR := $(shell GOTOOLCHAIN=local $(GO) env GOROOT 2>/dev/null)/bin
+# Версию приложения читаем из go.mod, как и CI, чтобы не поддерживать вторую копию.
+GO_VERSION := $(shell awk '$$1 == "go" { print $$2; exit }' "$(BACKEND_DIR)/go.mod")
 # Версия агрегатора закреплена для воспроизводимого набора анализаторов и схемы конфигурации.
 GOLANGCI_LINT_VERSION := 2.13.2
 # Версия сканера уязвимостей закреплена независимо от зависимостей приложения.
@@ -55,8 +57,11 @@ tools: check-go-version
 	chmod 0755 "$$tmp_dir/bin/golangci-lint"; \
 	echo "Building govulncheck v$(GOVULNCHECK_VERSION) with Go $(GO_VERSION)"; \
 	GOBIN="$$tmp_dir/bin" $(GO) install golang.org/x/vuln/cmd/govulncheck@v$(GOVULNCHECK_VERSION); \
-	"$$tmp_dir/bin/golangci-lint" version | grep -F "version $(GOLANGCI_LINT_VERSION)" >/dev/null; \
-	"$$tmp_dir/bin/govulncheck" -version | grep -F "govulncheck@v$(GOVULNCHECK_VERSION)" >/dev/null; \
+	lint_version="$$("$$tmp_dir/bin/golangci-lint" version --short)"; \
+	[ "$$lint_version" = "$(GOLANGCI_LINT_VERSION)" ]; \
+	scanner_info="$$($(GO) version -m "$$tmp_dir/bin/govulncheck")"; \
+	scanner_version="$$(printf '%s\n' "$$scanner_info" | awk '$$1 == "mod" && $$2 == "golang.org/x/vuln" { print $$3 }')"; \
+	[ "$$scanner_version" = "v$(GOVULNCHECK_VERSION)" ]; \
 	mkdir -p "$(TOOLS_DIR)"; \
 	mv -f "$$tmp_dir/bin/golangci-lint" "$(GOLANGCI_LINT)"; \
 	mv -f "$$tmp_dir/bin/govulncheck" "$(GOVULNCHECK)"; \
@@ -78,10 +83,12 @@ lint: check-go-version check-golangci-lint
 fmt: check-go-version check-golangci-lint
 	@cd "$(BACKEND_DIR)" && "$(GOLANGCI_LINT)" fmt
 
-# lint-fix применяет доступные исправления линтеров и показывает diff для обязательного просмотра.
+# lint-fix показывает diff даже при оставшихся замечаниях и сохраняет код ошибки анализатора.
 lint-fix: check-go-version check-golangci-lint
-	@cd "$(BACKEND_DIR)" && "$(GOLANGCI_LINT)" run --fix
-	@git -C "$(ROOT_DIR)" diff -- backend
+	@set -eu; status=0; \
+	(cd "$(BACKEND_DIR)" && "$(GOLANGCI_LINT)" run --fix) || status=$$?; \
+	git -C "$(ROOT_DIR)" diff -- backend; \
+	exit "$$status"
 
 # vuln запускает стандартный анализ вызываемых уязвимостей для всех пакетов backend.
 vuln: check-go-version check-govulncheck
@@ -101,11 +108,11 @@ build: check-go-version
 
 # check последовательно объединяет все обязательные проверки только для backend.
 check:
-	@$(MAKE) --no-print-directory lint
-	@$(MAKE) --no-print-directory vet
-	@$(MAKE) --no-print-directory test
-	@$(MAKE) --no-print-directory build
-	@$(MAKE) --no-print-directory vuln
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" lint
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" vet
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" test
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" build
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" vuln
 
 # check-go-version запрещает запуск проверок и установки на отличающемся Go toolchain.
 check-go-version:
@@ -117,14 +124,19 @@ check-go-version:
 
 # check-golangci-lint проверяет локальный бинарник и предлагает явную установку вместо автозагрузки.
 check-golangci-lint:
-	@if [ ! -x "$(GOLANGCI_LINT)" ] || ! "$(GOLANGCI_LINT)" version 2>/dev/null | grep -F "version $(GOLANGCI_LINT_VERSION)" >/dev/null; then \
+	@if [ ! -x "$(GOLANGCI_LINT)" ] || \
+		! actual="$$("$(GOLANGCI_LINT)" version --short 2>/dev/null)" || \
+		[ "$$actual" != "$(GOLANGCI_LINT_VERSION)" ]; then \
 		echo "golangci-lint v$(GOLANGCI_LINT_VERSION) is required; run 'make tools'" >&2; \
 		exit 1; \
 	fi
 
-# check-govulncheck проверяет локальный сканер и предлагает явную установку вместо автозагрузки.
+# check-govulncheck читает точную версию из бинарника без обращения к базе уязвимостей.
 check-govulncheck:
-	@if [ ! -x "$(GOVULNCHECK)" ] || ! "$(GOVULNCHECK)" -version 2>/dev/null | grep -F "govulncheck@v$(GOVULNCHECK_VERSION)" >/dev/null; then \
+	@if [ ! -x "$(GOVULNCHECK)" ] || \
+		! info="$$($(GO) version -m "$(GOVULNCHECK)" 2>/dev/null)" || \
+		[ "$$(printf '%s\n' "$$info" | awk '$$1 == "path" { print $$2 }')" != "golang.org/x/vuln/cmd/govulncheck" ] || \
+		[ "$$(printf '%s\n' "$$info" | awk '$$1 == "mod" && $$2 == "golang.org/x/vuln" { print $$3 }')" != "v$(GOVULNCHECK_VERSION)" ]; then \
 		echo "govulncheck v$(GOVULNCHECK_VERSION) is required; run 'make tools'" >&2; \
 		exit 1; \
 	fi
