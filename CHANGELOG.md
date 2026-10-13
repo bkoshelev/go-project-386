@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.3.2](https://github.com/bkoshelev/go-project-386/compare/v0.3.1...v0.3.2) (2026-10-13)
+
+
+### Bug Fixes
+
+* **backend:** harden pinned tooling and quality checks ([7f32a9d](https://github.com/bkoshelev/go-project-386/commit/7f32a9de91e4b890601ad68856e48c8298881cc0))
+* **backend:** harden quality checks and fix reported vulnerabilities ([a49b05c](https://github.com/bkoshelev/go-project-386/commit/a49b05c9793ca9e18354d7b4cb04e187b76370a1))
+* **backend:** update Go and dependencies to clear vulnerability checks ([9c8de13](https://github.com/bkoshelev/go-project-386/commit/9c8de1353418f90a96facb29bb63882668a9d48f))
+
 ## [0.3.1](https://github.com/bkoshelev/go-project-386/compare/v0.3.0...v0.3.1) (2026-09-17)
 
 
