@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.3](https://github.com/bkoshelev/go-project-386/compare/v0.3.2...v0.3.3) (2026-10-19)
+
+
+### Documentation
+
+* add repository agent guidelines ([#14](https://github.com/bkoshelev/go-project-386/issues/14)) ([317a2df](https://github.com/bkoshelev/go-project-386/commit/317a2df17aa06fd5007b2aae8d312ead91eead1d))
+
+
+### Miscellaneous Chores
+
+* add Orca worktree setup script ([fe12d3e](https://github.com/bkoshelev/go-project-386/commit/fe12d3e9eb2d370b470ac112ea28debf7e1965e5))
+* add Orca worktree setup script ([cb1abaf](https://github.com/bkoshelev/go-project-386/commit/cb1abaf3a98c8ac8ac1c76465f5d6d210ef3e03b))
+* install and configure Matt Pocock skills ([#17](https://github.com/bkoshelev/go-project-386/issues/17)) ([198a25e](https://github.com/bkoshelev/go-project-386/commit/198a25e11ec8cea8653ae77386d7f3f1fefae20e))
+
 ## [0.3.2](https://github.com/bkoshelev/go-project-386/compare/v0.3.1...v0.3.2) (2026-10-13)
 
 
