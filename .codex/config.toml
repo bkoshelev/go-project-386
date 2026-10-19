@@ -1,0 +1,33 @@
+# Project-scoped MCP servers for UI development.
+# Keep package versions explicit; update them deliberately.
+# Chrome is installed under /Applications/Browsers on this machine.
+
+[mcp_servers.playwright]
+command = "npx"
+args = [
+  "-y",
+  "@playwright/mcp@0.0.83",
+  "--isolated",
+  "--executable-path",
+  "/Applications/Browsers/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "--output-dir",
+  ".mcp-output/playwright",
+]
+startup_timeout_sec = 60
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = [
+  "-y",
+  "chrome-devtools-mcp@1.11.0",
+  "--isolated",
+  "--executablePath",
+  "/Applications/Browsers/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "--no-usage-statistics",
+]
+startup_timeout_sec = 60
+
+[mcp_servers.mantine]
+command = "npx"
+args = ["-y", "@mantine/mcp-server@9.7.3"]
+startup_timeout_sec = 60
