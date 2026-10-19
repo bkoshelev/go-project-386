@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/bkoshelev/go-project-386/compare/v0.3.3...v0.4.0) (2026-10-19)
+
+
+### Features
+
+* **api:** generate frontend client from TypeSpec contract ([#21](https://github.com/bkoshelev/go-project-386/issues/21)) ([fc09776](https://github.com/bkoshelev/go-project-386/commit/fc09776889b74f5bdf07ae776c568e51e4cf6c67))
+* **frontend:** add meeting calendar home page ([#20](https://github.com/bkoshelev/go-project-386/issues/20)) ([d34066c](https://github.com/bkoshelev/go-project-386/commit/d34066c5724a901c225bc5c272b7659fa1af69f3))
+
+
+### Miscellaneous Chores
+
+* configure project MCP servers for UI development ([#18](https://github.com/bkoshelev/go-project-386/issues/18)) ([d332d3e](https://github.com/bkoshelev/go-project-386/commit/d332d3e183c4ff7d65b99e685fbc3f63857cfc76))
+
 ## [0.3.3](https://github.com/bkoshelev/go-project-386/compare/v0.3.2...v0.3.3) (2026-10-19)
 
 
