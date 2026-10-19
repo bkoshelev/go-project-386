@@ -1,6 +1,7 @@
 package httpserver
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/bkoshelev/go-project-386/backend/internal/api"
 )
 
 // NewRouter creates the backend HTTP router with logging and panic recovery.
@@ -21,11 +24,34 @@ func NewRouter(logger *slog.Logger, mode string) (*gin.Engine, error) {
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	if err := registerAPI(router, logger, healthHandler{}); err != nil {
+		return nil, err
+	}
 
 	return router, nil
+}
+
+type healthHandler struct{}
+
+func (healthHandler) GetHealth(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
+	return api.GetHealth200JSONResponse{Status: api.Ok}, nil
+}
+
+func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface) error {
+	validator, err := newRequestValidator()
+	if err != nil {
+		return err
+	}
+	adapter := errorAdapter{logger: logger}
+	strict := api.NewStrictHandlerWithOptions(handler, nil, api.StrictGinServerOptions{
+		RequestErrorHandlerFunc:  adapter.requestError,
+		HandlerErrorFunc:         adapter.internalError,
+		ResponseErrorHandlerFunc: adapter.internalError,
+	})
+	api.RegisterHandlersWithOptions(router.Group("", validator.middleware()), strict, api.GinServerOptions{
+		ErrorHandler: adapter.pathError,
+	})
+	return nil
 }
 
 func accessLogger(logger *slog.Logger) gin.HandlerFunc {

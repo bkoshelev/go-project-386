@@ -26,7 +26,7 @@ GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 GOVULNCHECK := $(TOOLS_DIR)/govulncheck
 
 # Все цели служебные: одноимённые файлы не должны мешать выполнению проверок.
-.PHONY: tools lint fmt lint-fix vuln vet test build check check-go-version check-golangci-lint check-govulncheck
+.PHONY: tools lint fmt lint-fix vuln vet test build check api-generate check-go-version check-golangci-lint check-govulncheck
 
 # tools устанавливает закреплённые инструменты локально после проверки платформы и SHA-256 архива.
 tools: check-go-version
@@ -105,6 +105,13 @@ test: check-go-version
 # build проверяет сборку всех backend-пакетов без создания артефакта в репозитории.
 build: check-go-version
 	@cd "$(BACKEND_DIR)" && $(GO) build ./...
+
+# Только явная регенерация требует Node.js/pnpm; обычные backend-проверки читают Go из Git.
+# go tool использует версию oapi-codegen и зависимости, закреплённые в go.mod/go.sum.
+api-generate: check-go-version
+	@pnpm --dir "$(ROOT_DIR)/api" build
+	@cd "$(BACKEND_DIR)" && $(GO) tool oapi-codegen --config oapi-models.yaml ../api/generated/openapi.yaml
+	@cd "$(BACKEND_DIR)" && $(GO) tool oapi-codegen --config oapi-server.yaml ../api/generated/openapi.yaml
 
 # check последовательно объединяет все обязательные проверки только для backend.
 check:
