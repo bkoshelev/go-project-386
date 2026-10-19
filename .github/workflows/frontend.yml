@@ -25,7 +25,12 @@ jobs:
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: |
+            api/pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
+
+      - name: Install API tooling
+        run: pnpm --dir ../api install --frozen-lockfile
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -53,7 +58,12 @@ jobs:
         with:
           node-version-file: frontend/.nvmrc
           cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
+          cache-dependency-path: |
+            api/pnpm-lock.yaml
+            frontend/pnpm-lock.yaml
+
+      - name: Install API tooling
+        run: pnpm --dir ../api install --frozen-lockfile
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

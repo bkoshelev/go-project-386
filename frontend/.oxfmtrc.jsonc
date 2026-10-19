@@ -18,6 +18,7 @@
   "sortPackageJson": true,
   // Не форматирует зависимости, результаты инструментов, документацию, lock-файл и сгенерированные файлы.
   "ignorePatterns": [
+    "src/api/generated/",
     "node_modules/",
     "dist/",
     "playwright-report/",

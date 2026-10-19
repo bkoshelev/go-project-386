@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "check": "pnpm lint && pnpm format:check",
+    "api:generate": "pnpm --dir ../api generate",
+    "dev": "pnpm api:generate && vite",
+    "build": "pnpm api:generate && tsc -b && vite build",
+    "check": "pnpm --dir ../api check && pnpm api:generate && pnpm lint && pnpm format:check",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "pnpm lint:code && pnpm lint:css",

@@ -13,6 +13,7 @@
 
 - `backend/`: модуль на Go/Gin; точка входа — `cmd/server/`, а `internal/config/`, `internal/httpserver/` и `internal/server/` отвечают за конфигурацию, маршрутизацию и жизненный цикл. Тесты расположены рядом с исходными файлами.
 - `frontend/`: React, TypeScript, Vite и Mantine; код приложения и CSS находятся в `src/`, а тесты Playwright — в `tests/`.
+- `api/`: контракт TypeSpec в `main.tsp` и инструменты генерации OpenAPI и Fetch-клиента Hey API. Зависимости устанавливаются отдельно через `pnpm --dir api install --frozen-lockfile`.
 - В `docs/adr/` фиксируются архитектурные решения, а в `specs/` описываются требования. В `.github/workflows/` находится конфигурация CI, а `scripts/setup-worktree.sh` подготавливает рабочие деревья Orca.
 
 ## Команды сборки, тестирования и разработки
@@ -27,6 +28,7 @@
 
 Из каталога `frontend/`:
 
+- `pnpm api:generate`: скомпилировать TypeSpec и сгенерировать клиент в `src/api/generated/`; автоматически выполняется перед `dev`, `build` и `check`. Сгенерированные файлы исключены из Git.
 - `pnpm install --frozen-lockfile`: воспроизводимо установить зависимости.
 - `pnpm dev`: запустить сервер разработки Vite.
 - `pnpm check`: запустить Oxlint, Stylelint и проверку форматирования.
