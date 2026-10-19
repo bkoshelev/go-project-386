@@ -43,6 +43,43 @@ pnpm exec playwright install chromium
 Chromium устанавливается отдельно один раз при подготовке окружения. После
 обновления Playwright установку браузера может потребоваться повторить.
 
+### MCP для разработки интерфейса
+
+В [`.codex/config.toml`](.codex/config.toml) настроены три MCP-сервера для Codex:
+
+- [Playwright MCP](https://github.com/microsoft/playwright-mcp) — взаимодействие
+  с интерфейсом, проверка сценариев и снимки экрана.
+- [Chrome DevTools MCP](https://github.com/ChromeDevTools/chrome-devtools-mcp) —
+  диагностика консоли, сетевых запросов и производительности.
+- [Mantine MCP](https://mantine.dev/guides/llms/#mcp-server-experimental) — поиск
+  документации, свойств компонентов и примеров Mantine v9.
+
+Конфигурация действует в этом проекте. По
+[правилам Codex](https://developers.openai.com/codex/mcp/) проект должен быть
+доверенным. После изменения конфигурации перезапустите сессию Codex. Проверить
+регистрацию серверов можно командой `codex mcp list` из корня проекта, а активные
+подключения — командой `/mcp` внутри Codex.
+
+Нужны Node.js и `npx` в окружении Codex, доступ к npm при первой загрузке пакетов
+и установленный Google Chrome для браузерных серверов. Chromium, установленный
+для smoke-тестов фронтенда, настраивается отдельно и не заменяет Google Chrome
+в этой конфигурации. Локально указан установленный на этой машине Chrome:
+`/Applications/Browsers/Google Chrome.app/Contents/MacOS/Google Chrome`.
+На другой машине замените этот путь в `args` обоих браузерных серверов:
+`--executable-path` у Playwright и `--executablePath` у Chrome DevTools.
+При стандартной установке Chrome эти параметры можно удалить.
+
+Версии MCP-пакетов закреплены в конфигурации; они загружаются через `npx` и
+не входят в зависимости приложения. Для Mantine нужны обращения к `mantine.dev`;
+документация соответствует текущему Mantine v9, поэтому свойства сверяйте с
+версией в `frontend/package.json`.
+
+Браузерные серверы используют временные изолированные профили. У Chrome DevTools
+отключена отправка статистики использования. Автоматические артефакты Playwright
+попадают в `.mcp-output/playwright/` и исключены из Git. Для проверки локального
+интерфейса запустите `pnpm dev` из `frontend/` и передайте агенту адрес,
+напечатанный Vite.
+
 ### Бэкенд
 
 Для бэкенда нужен именно Go 1.26.9. Версия закреплена в `backend/go.mod` и
