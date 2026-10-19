@@ -1,42 +1,42 @@
-# Repository Guidelines
+# Правила работы с репозиторием
 
-## Project Structure & Module Organization
+## Структура проекта и организация модулей
 
-This calendar-booking project contains two independent applications:
+Проект календарного бронирования состоит из двух независимых приложений:
 
-- `backend/`: Go/Gin module; `cmd/server/` is the entry point, and `internal/config/`, `internal/httpserver/`, and `internal/server/` handle configuration, routing, and lifecycle. Tests sit beside source files.
-- `frontend/`: React, TypeScript, Vite, and Mantine; application code and CSS live in `src/`, with Playwright tests in `tests/`.
-- `docs/adr/` records architectural decisions; `specs/` describes requirements. `.github/workflows/` contains CI, and `scripts/setup-worktree.sh` prepares Orca worktrees.
+- `backend/`: модуль на Go/Gin; точка входа — `cmd/server/`, а `internal/config/`, `internal/httpserver/` и `internal/server/` отвечают за конфигурацию, маршрутизацию и жизненный цикл. Тесты расположены рядом с исходными файлами.
+- `frontend/`: React, TypeScript, Vite и Mantine; код приложения и CSS находятся в `src/`, а тесты Playwright — в `tests/`.
+- В `docs/adr/` фиксируются архитектурные решения, а в `specs/` описываются требования. В `.github/workflows/` находится конфигурация CI, а `scripts/setup-worktree.sh` подготавливает рабочие деревья Orca.
 
-## Build, Test, and Development Commands
+## Команды сборки, тестирования и разработки
 
-From the repository root (Makefile targets cover backend only):
+Из корня репозитория (цели Makefile относятся только к серверной части):
 
-- `make tools`: install pinned golangci-lint and govulncheck into `backend/bin/tools/`.
-- `make check`: run lint, vet, race tests, build, and vulnerability scanning.
-- `make fmt`: apply gofmt and goimports; review the resulting diff.
+- `make tools`: установить закреплённые версии golangci-lint и govulncheck в `backend/bin/tools/`.
+- `make check`: запустить линтер, vet, тесты с обнаружением гонок данных, сборку и сканирование уязвимостей.
+- `make fmt`: применить gofmt и goimports; проверить получившиеся изменения.
 
-From `backend/`, run `go mod download`, then `GOTOOLCHAIN=local go run ./cmd/server` for local development.
+Для локальной разработки в каталоге `backend/` выполните `go mod download`, затем `GOTOOLCHAIN=local go run ./cmd/server`.
 
-From `frontend/`:
+Из каталога `frontend/`:
 
-- `pnpm install --frozen-lockfile`: install dependencies reproducibly.
-- `pnpm dev`: start Vite development server.
-- `pnpm check`: run Oxlint, Stylelint, and formatting checks.
-- `pnpm build`: type-check and build production assets.
-- `pnpm exec playwright install chromium`: prepare the test browser.
-- `pnpm test:smoke`: build and test production UI in Chromium on port 4173.
+- `pnpm install --frozen-lockfile`: воспроизводимо установить зависимости.
+- `pnpm dev`: запустить сервер разработки Vite.
+- `pnpm check`: запустить Oxlint, Stylelint и проверку форматирования.
+- `pnpm build`: проверить типы и собрать ресурсы для рабочей среды.
+- `pnpm exec playwright install chromium`: подготовить браузер для тестов.
+- `pnpm test:smoke`: собрать и протестировать интерфейс рабочей сборки в Chromium на порту 4173.
 
-## Coding Style & Naming Conventions
+## Стиль кода и правила именования
 
-Use canonical Go formatting with tabs, lowercase package names, and comments for exported identifiers. Follow existing `TestXxx` naming.
+Используйте стандартное форматирование Go с табуляцией, имена пакетов в нижнем регистре и комментарии для экспортируемых идентификаторов. Следуйте принятому шаблону именования тестов `TestXxx`.
 
-Frontend formatting uses Oxfmt: two spaces, double quotes, semicolons, trailing commas, and 100-character lines. Use PascalCase React components, such as `App.tsx`. Preserve CSS import order. Keep lint suppressions narrow and explain each exception.
+Для форматирования клиентской части используется Oxfmt: отступы в два пробела, двойные кавычки, точки с запятой, завершающие запятые и строки длиной до 100 символов. Именуйте компоненты React в PascalCase, например `App.tsx`. Сохраняйте порядок импортов CSS. Ограничивайте область подавления предупреждений линтера и объясняйте каждое исключение.
 
-## Testing Guidelines
+## Правила тестирования
 
-Backend tests use Go's `testing`, Testify, and `httptest`; name files `*_test.go`. Run `make test` for race detection. Frontend browser tests use Playwright in `tests/*.spec.ts`. Add behavioral tests for changes; no numeric coverage threshold is configured. Run relevant quality gates before opening a PR.
+Тесты серверной части используют пакет Go `testing`, Testify и `httptest`; именуйте файлы по шаблону `*_test.go`. Для обнаружения гонок данных запускайте `make test`. Браузерные тесты клиентской части используют Playwright и находятся в `tests/*.spec.ts`. При внесении изменений добавляйте тесты поведения; числовой порог покрытия не задан. Перед созданием PR запускайте соответствующие проверки качества.
 
-## Commit & Pull Request Guidelines
+## Правила коммитов и запросов на слияние
 
-Use Conventional Commits, matching history: `feat(frontend): ...`, `fix(backend): ...`, or `chore: ...`. Prefer squash merging with a Conventional Commit PR title. Describe behavior changes and validation; link relevant issues and include screenshots for UI changes. Release-please manages shared versioning and changelogs; coordinate breaking changes with the team.
+Используйте Conventional Commits в соответствии с историей репозитория: `feat(frontend): ...`, `fix(backend): ...` или `chore: ...`. Предпочитайте слияние с объединением коммитов (squash), а заголовок PR оформляйте по Conventional Commits. Описывайте изменения поведения и выполненные проверки; добавляйте ссылки на связанные задачи, а при изменениях интерфейса — снимки экрана. Release-please управляет общей версией проекта и журналами изменений; согласовывайте с командой изменения, нарушающие обратную совместимость.
