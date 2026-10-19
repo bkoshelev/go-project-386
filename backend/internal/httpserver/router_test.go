@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -21,7 +22,9 @@ func TestSmokeHealth(t *testing.T) {
 	router.ServeHTTP(response, request)
 
 	require.Equal(t, http.StatusOK, response.Code)
-	require.Equal(t, "application/json; charset=utf-8", response.Header().Get("Content-Type"))
+	mediaType, _, err := mime.ParseMediaType(response.Header().Get("Content-Type"))
+	require.NoError(t, err)
+	require.Equal(t, "application/json", mediaType)
 	require.JSONEq(t, `{"status":"ok"}`, response.Body.String())
 }
 
@@ -80,4 +83,20 @@ func newTestRouter(t *testing.T, output io.Writer) *gin.Engine {
 	require.NoError(t, err)
 
 	return router
+}
+
+func TestOnlyImplementedOperationsAreRegistered(t *testing.T) {
+	router := newTestRouter(t, io.Discard)
+	require.Len(t, router.Routes(), 1)
+	require.Equal(t, "/healthz", router.Routes()[0].Path)
+	require.Equal(t, http.MethodGet, router.Routes()[0].Method)
+	for _, path := range []string{"/api/owner", "/api/event-types", "/api/bookings"} {
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
+		require.Equal(t, http.StatusNotFound, response.Code)
+	}
+	// Pre-binding validation must not turn an unimplemented endpoint into a 422.
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/bookings", strings.NewReader(`{}`)))
+	require.Equal(t, http.StatusNotFound, response.Code)
 }
