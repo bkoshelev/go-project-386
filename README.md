@@ -12,6 +12,7 @@
 
 - Go и Gin
 - React, TypeScript, Vite и Mantine
+- TypeSpec → OpenAPI → TypeScript-клиент Hey API
 
 ## Установка
 
@@ -36,12 +37,60 @@ nvm install
 nvm use
 corepack enable
 corepack prepare pnpm@12.4.2 --activate
-pnpm install
+pnpm --dir ../api install --frozen-lockfile
+pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
 ```
 
 Chromium устанавливается отдельно один раз при подготовке окружения. После
 обновления Playwright установку браузера может потребоваться повторить.
+
+### Контракт API и клиент
+
+Контракт хранится в [`api/main.tsp`](api/main.tsp). [TypeSpec](https://typespec.io/)
+генерирует из него OpenAPI 3.1 в `api/generated/openapi.yaml`, затем
+[Hey API](https://heyapi.dev/docs/openapi/typescript/get-started) создаёт типы,
+SDK и Fetch-клиент в `frontend/src/api/generated/`. Версии инструментов закреплены
+в `package.json` и lock-файлах. Для обоих пакетов используются Node.js и pnpm,
+указанные выше; `api/` устанавливается отдельно от `frontend/`.
+
+Из корня проекта:
+
+```bash
+# Проверить контракт и его форматирование
+pnpm --dir api check
+
+# Сгенерировать OpenAPI и клиент
+pnpm --dir frontend api:generate
+
+# Отформатировать TypeSpec после редактирования
+pnpm --dir api format
+```
+
+`pnpm dev`, `pnpm build` и `pnpm check` во фронтенде автоматически запускают
+генерацию. После изменения контракта при работающем Vite выполните
+`pnpm api:generate` ещё раз. Каталоги `generated/` исключены из Git; их содержимое
+пересоздаётся из TypeSpec, править его вручную не нужно. `pnpm check` также
+проверяет контракт, а сборка проверяет типы сгенерированного клиента.
+
+Пока описан существующий `GET /healthz` с ответом `{"status":"ok"}`.
+Пример использования клиента из кода фронтенда:
+
+```ts
+import { getHealth } from "./api/generated";
+
+const { data } = await getHealth({ baseUrl: "http://localhost:8080" });
+```
+
+Адрес бэкенда задаётся явно при вызове либо через
+`client.setConfig({ baseUrl })` из `./api/generated/client.gen`. Для запросов
+между разными origin бэкенд должен разрешать CORS либо нужен прокси.
+Генерация работает без запущенного Go-сервера и обращения к реестру Hey API.
+
+Hey API 0.99.0 использует JavaScript API компилятора, отсутствующий в
+TypeScript 7. Поэтому в отдельном пакете `api/` закреплён TypeScript 6.0.3
+для генератора; приложение продолжает собираться TypeScript 7.
+Причина ограничения: [hey-api/hey-api#4235](https://github.com/hey-api/hey-api/issues/4235).
 
 ### MCP для разработки интерфейса
 
@@ -124,8 +173,9 @@ bash "$ORCA_WORKTREE_PATH/scripts/setup-worktree.sh"
 ```
 
 Скрипт проверяет закреплённые версии Go, Node.js и pnpm, скачивает Go-модули,
-устанавливает backend-инструменты, frontend-зависимости вместе с devDependencies
-и Chromium для Playwright. Повторный запуск допускается; backend-инструменты
+устанавливает backend-инструменты, зависимости API и фронтенда вместе с
+devDependencies, генерирует API-клиент и устанавливает Chromium для Playwright.
+Повторный запуск допускается; backend-инструменты
 нужных версий повторно не устанавливаются. Скрипт должен присутствовать в ветке,
 из которой создаётся worktree.
 

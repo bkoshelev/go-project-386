@@ -66,6 +66,7 @@
   ],
   // Сторонний код, сборка и отчёты генерируются другими инструментами и не проверяются Oxlint.
   "ignorePatterns": [
+    "src/api/generated/",
     "node_modules/",
     "dist/",
     "playwright-report/",
