@@ -1,0 +1,68 @@
+{
+  "revision": 1,
+  "status": "approved",
+  "canonicalIssue": "https://github.com/bkoshelev/go-project-386/issues/31",
+  "approvalIssue": "https://github.com/bkoshelev/go-project-386/issues/30",
+  "acceptedComponents": [
+    "specification",
+    "screens",
+    "http-contract",
+    "excalidraw-diagram"
+  ],
+  "deferredIssues": [
+    "https://github.com/bkoshelev/go-project-386/issues/32"
+  ],
+  "artifacts": [
+    {
+      "path": "specs/booking.md",
+      "sha256": "c1d45b6cd80613b5cca02db83a10775b25fae0534ff5d9de8d8ef79bc1403404",
+      "bytes": 35518
+    },
+    {
+      "path": "specs/booking-api.md",
+      "sha256": "b291410bfff3bbb46bf6ea386af981702648f886720503bd9af78b2f2abf5722",
+      "bytes": 19668
+    },
+    {
+      "path": "specs/booking-screens.md",
+      "sha256": "371770c593d3c3d14cc85aa96c8cabd5b54a0dec9980b1b8e0c99424c25abe53",
+      "bytes": 14013
+    },
+    {
+      "path": "api/main.tsp",
+      "sha256": "c50d074566d10a98197a6e97fd1cedf8526bb36473a63ba1416d73cec13c9be1",
+      "bytes": 24788
+    },
+    {
+      "path": "docs/diagrams/application.excalidraw",
+      "sha256": "410a105fc58ddeca45e5c30dd15fef90f334e61396f0f37dd7b51f5c7ad0adbc",
+      "bytes": 116873
+    },
+    {
+      "path": "docs/diagrams/README.md",
+      "sha256": "e945d1bb8dd7b4a0a6547f931882d8cab1652afd832f78480201114cca2cc5aa",
+      "bytes": 2609
+    },
+    {
+      "path": "specs/home-page.md",
+      "sha256": "3d4fb4f99b2eca53c7fad282d6e6f060e022e4d7bb8d872f4cf67b038b61aee5",
+      "bytes": 4738
+    },
+    {
+      "path": "docs/adr/0012-application-home-page.md",
+      "sha256": "584fb008b021016de4d132ae64d4f5f499766c2b9a8b921181d9fd4cd7d0f188",
+      "bytes": 2807
+    },
+    {
+      "path": "GLOSSARY.md",
+      "sha256": "d2b7f09ef1f9fb36eb68a369d1b2ffea3bbc31360dcedccea29b125057a2a82b",
+      "bytes": 3935
+    }
+  ],
+  "approvedOn": "2026-10-19",
+  "approvedReviewManifestSha256": "6812f72058a729cc946da232ca83c9a3fb819927d20bc0ba51c98a02b0426137",
+  "finalizationNotes": [
+    "После утверждения обновлены статусы документов; поведенческие требования и контракт не менялись.",
+    "Удалённые пользователем необязательные SVG/PNG-превью исключены из ссылок и манифеста; исходник Excalidraw сохранён."
+  ]
+}
