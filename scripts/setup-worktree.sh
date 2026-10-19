@@ -138,13 +138,13 @@ log "$stage"
 # Устанавливаем текущий этап установки серверных инструментов для диагностики ошибок.
 stage="installing backend tools"
 # Проверяем, совпадают ли установленные версии инструментов с закреплёнными в Makefile.
-if make --no-print-directory GO="$GO" check-golangci-lint check-govulncheck >/dev/null 2>&1; then
+if make --no-print-directory GO="$GO" check-golangci-lint check-govulncheck check-sqlc >/dev/null 2>&1; then
   # Сообщаем, что подходящие версии инструментов уже установлены.
   log "Backend tools already match the pinned versions"
 else
   # Сообщаем о начале установки серверных инструментов.
   log "$stage"
-  # Устанавливаем закреплённые версии golangci-lint и govulncheck.
+  # Устанавливаем закреплённые версии golangci-lint, govulncheck и sqlc.
   make --no-print-directory GO="$GO" tools
 fi
 
