@@ -1,0 +1,8 @@
+# read_json используется для чтения packageManager без установленного Node.js.
+min_version = "2026.10.15"
+
+[tools]
+# Источники версий общие с Makefile и CI; отдельные номера здесь не дублируются.
+go = '''{{ exec(command="awk '$1 == \"go\" { print $2; exit }' backend/go.mod") }}'''
+node = "{{ read_file(path='frontend/.nvmrc') | trim }}"
+pnpm = "{{ read_json(path='frontend/package.json')['packageManager'] | split(pat='@') | last }}"

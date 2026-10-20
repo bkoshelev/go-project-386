@@ -5,6 +5,7 @@ go 1.26.9
 require (
 	github.com/getkin/kin-openapi v0.142.0
 	github.com/gin-gonic/gin v1.12.0
+	github.com/go-testfixtures/testfixtures/v3 v3.19.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
 	github.com/oapi-codegen/runtime v1.6.0

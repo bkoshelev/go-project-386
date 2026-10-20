@@ -9,3 +9,5 @@ frontend/blob-report/
 backend/bin/
 .mcp-output/
 artifacts/
+.env.local
+.direnv/

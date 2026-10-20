@@ -31,8 +31,10 @@ require_command() {
 [[ -n "${ORCA_WORKTREE_PATH:-}" ]] || fail "ORCA_WORKTREE_PATH must point to the new worktree"
 # Проверяем существование каталога рабочего дерева.
 [[ -d "$ORCA_WORKTREE_PATH" ]] || fail "Worktree directory does not exist: $ORCA_WORKTREE_PATH"
-# Переходим в корень нового рабочего дерева.
-cd "$ORCA_WORKTREE_PATH"
+# Используем физический путь: direnv должен разрешать и загружать один и тот же
+# .envrc даже через символьные ссылки (например, /var и /private/var на macOS).
+cd -P "$ORCA_WORKTREE_PATH"
+export ORCA_WORKTREE_PATH="$PWD"
 
 # Разрешаем только значения 0 и 1 для флага дополнительных проверок.
 case "${SETUP_VERIFY:-0}" in
@@ -41,7 +43,7 @@ case "${SETUP_VERIFY:-0}" in
 esac
 
 # Перебираем файлы, необходимые для настройки проекта.
-for file in Makefile backend/go.mod backend/go.sum api/package.json api/pnpm-lock.yaml frontend/.nvmrc frontend/package.json frontend/pnpm-lock.yaml; do
+for file in .envrc mise.toml Makefile backend/go.mod backend/go.sum api/package.json api/pnpm-lock.yaml frontend/.nvmrc frontend/package.json frontend/pnpm-lock.yaml; do
   # Останавливаем настройку, если обязательный файл отсутствует.
   [[ -f "$file" ]] || fail "Required project file is missing: $file"
 done
@@ -52,29 +54,37 @@ for tool in make curl tar awk tr uname; do
   require_command "$tool"
 done
 
-# Orca может унаследовать устаревший PATH: выбираем уже установленные закреплённые версии
-# без загрузки настроек интерактивной оболочки и скачивания другого набора инструментов Go.
+# Перезапускаем тот же скрипт в окружении worktree без интерактивных shell hooks.
+# Внутренний аргумент ограничивает подготовку окружения одним проходом.
+if [[ "${1:-}" != "--with-environment" ]]; then
+  require_command direnv
+  require_command mise
+
+  stage="trusting worktree configuration"
+  log "$stage"
+  # Запуск setup разрешает конфигурации именно текущего worktree.
+  direnv allow "$PWD/.envrc"
+  mise trust "$PWD/mise.toml"
+
+  stage="installing project runtimes"
+  log "$stage"
+  # Явный список не устанавливает инструменты из родительских конфигураций mise.
+  direnv exec "$PWD" mise install go node pnpm
+
+  stage="preparing worktree in direnv and mise"
+  direnv exec "$PWD" mise exec go node pnpm -- bash "$PWD/scripts/setup-worktree.sh" --with-environment
+  exit 0
+fi
+
 # Запрещаем Go автоматически выбирать и скачивать другую версию набора инструментов.
 export GOTOOLCHAIN=local
 # Читаем требуемую версию Go из описания серверного модуля.
 expected_go="$(awk '$1 == "go" { print $2; exit }' backend/go.mod)"
-# Если GO не задана, проверяем наличие нужной версии Go в каталоге SDK пользователя.
-if [[ -z "${GO:-}" && -x "$HOME/sdk/go$expected_go/bin/go" ]]; then
-  # Выбираем найденный исполняемый файл Go.
-  GO="$HOME/sdk/go$expected_go/bin/go"
-fi
-# Передаём выбранную команду Go дочерним процессам; по умолчанию используем go из PATH.
+# Сохраняем явное переопределение GO; по умолчанию используем выбранный mise Go.
 export GO="${GO:-go}"
 
 # Читаем требуемую версию Node.js, удаляя пробельные символы.
 expected_node="$(tr -d '[:space:]' < frontend/.nvmrc)"
-# Формируем путь к каталогу нужной версии Node.js, установленной через nvm.
-node_bin="${NVM_DIR:-$HOME/.nvm}/versions/node/v$expected_node/bin"
-# Проверяем, установлена ли нужная версия Node.js через nvm.
-if [[ -x "$node_bin/node" ]]; then
-  # Даём выбранной версии Node.js приоритет при поиске команд.
-  export PATH="$node_bin:$PATH"
-fi
 # Перебираем выбранный Go и команды клиентского окружения.
 for tool in "$GO" node pnpm; do
   # Проверяем доступность очередного инструмента.

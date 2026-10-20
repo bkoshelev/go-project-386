@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-testfixtures/testfixtures/v3"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -73,6 +74,21 @@ func runTests(m *testing.M) (code int) {
 	}
 	if _, err := provider.Up(ctx); err != nil {
 		fmt.Fprintln(os.Stderr, "apply test schema:", err)
+		return 1
+	}
+	// Load the shared baseline before tests open their rollback-only transactions.
+	fixtures, err := testfixtures.New(
+		testfixtures.Database(sqlDB),
+		testfixtures.Dialect("postgres"),
+		testfixtures.Directory("testdata/fixtures"),
+		testfixtures.SkipTableChecksumComputation(),
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "create fixture loader:", err)
+		return 1
+	}
+	if err := fixtures.Load(); err != nil {
+		fmt.Fprintln(os.Stderr, "load test fixtures:", err)
 		return 1
 	}
 	return m.Run()
