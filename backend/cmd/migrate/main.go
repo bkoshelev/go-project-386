@@ -34,12 +34,15 @@ func main() {
 func execute(ctx context.Context, args []string, out io.Writer) (retErr error) {
 	flags := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	flags.SetOutput(out)
-	dsn := flags.String("dsn", "", "explicit PostgreSQL connection string")
+	dsn := flags.String("dsn", "", "PostgreSQL connection string (defaults to DATABASE_URL)")
 	if err := flags.Parse(args); err != nil {
 		return err
 	}
+	if *dsn == "" {
+		*dsn = os.Getenv("DATABASE_URL")
+	}
 	if strings.TrimSpace(*dsn) == "" {
-		return errors.New("-dsn is required")
+		return errors.New("-dsn or DATABASE_URL is required")
 	}
 	if flags.NArg() != 1 {
 		return errors.New("expected up, down or status")
@@ -63,21 +66,21 @@ func execute(ctx context.Context, args []string, out io.Writer) (retErr error) {
 	case "up":
 		results, err := provider.Up(ctx)
 		if err != nil {
-			return fmt.Errorf("migrate up: %w", err)
+			return errors.New("migrate up failed")
 		}
 		_, err = fmt.Fprintf(out, "Applied %d migration(s)\n", len(results))
 		return err
 	case "down":
 		result, err := provider.Down(ctx)
 		if err != nil {
-			return fmt.Errorf("migrate down: %w", err)
+			return errors.New("migrate down failed")
 		}
 		_, err = fmt.Fprintln(out, result)
 		return err
 	case "status":
 		status, err := provider.Status(ctx)
 		if err != nil {
-			return fmt.Errorf("migration status: %w", err)
+			return errors.New("migration status failed")
 		}
 		for _, migration := range status {
 			if _, err := fmt.Fprintf(out, "%05d\t%s\t%s\n", migration.Source.Version, migration.State, migration.Source.Path); err != nil {

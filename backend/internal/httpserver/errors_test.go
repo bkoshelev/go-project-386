@@ -48,6 +48,10 @@ func (f healthStub) GetHealth(ctx context.Context, request api.GetHealthRequestO
 	return f(ctx, request)
 }
 
+func (healthStub) GetReadiness(context.Context, api.GetReadinessRequestObject) (api.GetReadinessResponseObject, error) {
+	return api.GetReadiness200JSONResponse{Status: api.Ok}, nil
+}
+
 type brokenResponse struct{}
 
 func (brokenResponse) VisitGetHealthResponse(http.ResponseWriter) error {

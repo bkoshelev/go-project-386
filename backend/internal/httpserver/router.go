@@ -3,6 +3,7 @@ package httpserver
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/http"
 	"runtime/debug"
@@ -13,8 +14,16 @@ import (
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
 )
 
+// Options supplies the external dependencies served by the router.
+type Options struct {
+	// Readiness checks database access using the request's bounded context.
+	Readiness func(context.Context) error
+	// Frontend contains the production assets; nil disables frontend serving.
+	Frontend fs.FS
+}
+
 // NewRouter creates the backend HTTP router with logging and panic recovery.
-func NewRouter(logger *slog.Logger, mode string) (*gin.Engine, error) {
+func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, error) {
 	gin.SetMode(mode)
 
 	router := gin.New()
@@ -24,17 +33,34 @@ func NewRouter(logger *slog.Logger, mode string) (*gin.Engine, error) {
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	if err := registerAPI(router, logger, healthHandler{}); err != nil {
+	if err := registerAPI(router, logger, healthHandler{checkReady: options.Readiness}); err != nil {
 		return nil, err
+	}
+	if options.Frontend != nil {
+		if err := serveFrontend(router, options.Frontend); err != nil {
+			return nil, err
+		}
 	}
 
 	return router, nil
 }
 
-type healthHandler struct{}
+type healthHandler struct{ checkReady func(context.Context) error }
 
 func (healthHandler) GetHealth(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
 	return api.GetHealth200JSONResponse{Status: api.Ok}, nil
+}
+
+func (h healthHandler) GetReadiness(ctx context.Context, _ api.GetReadinessRequestObject) (api.GetReadinessResponseObject, error) {
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	if h.checkReady == nil || h.checkReady(ctx) != nil || ctx.Err() != nil {
+		return api.GetReadiness503JSONResponse{
+			Code:    api.GetReadiness503JSONResponseBodyCodeServiceUnavailable,
+			Message: "База данных недоступна",
+		}, nil
+	}
+	return api.GetReadiness200JSONResponse{Status: api.Ok}, nil
 }
 
 func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface) error {
