@@ -68,6 +68,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Verify Docker is available
+        run: docker info
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 

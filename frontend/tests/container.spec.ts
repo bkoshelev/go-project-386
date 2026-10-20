@@ -7,7 +7,7 @@ test("образ обслуживает frontend и backend на одном orig
   await page.goto("/");
   await expect(page).toHaveTitle("Календарь встреч");
   await expect(page.getByRole("heading", { name: "Календарь встреч" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Записаться" })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Записаться" })).toHaveAttribute("href", "/book");
   const health = await page.evaluate(async () => {
     const response = await fetch("/healthz");
     return { status: response.status, body: await response.json() };

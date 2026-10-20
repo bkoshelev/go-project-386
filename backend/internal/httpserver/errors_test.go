@@ -42,10 +42,13 @@ func TestErrorAdapter(t *testing.T) {
 	}
 }
 
-type healthStub func(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error)
+type healthStub struct {
+	catalogHandler
+	health func(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error)
+}
 
 func (f healthStub) GetHealth(ctx context.Context, request api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
-	return f(ctx, request)
+	return f.health(ctx, request)
 }
 
 func (healthStub) GetReadiness(context.Context, api.GetReadinessRequestObject) (api.GetReadinessResponseObject, error) {
@@ -61,12 +64,12 @@ func (brokenResponse) VisitGetHealthResponse(http.ResponseWriter) error {
 func TestStrictHandlerErrorsUseContract(t *testing.T) {
 	for _, serialization := range []bool{false, true} {
 		t.Run(map[bool]string{false: "application", true: "serialization"}[serialization], func(t *testing.T) {
-			handler := healthStub(func(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
+			handler := healthStub{health: func(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error) {
 				if serialization {
 					return brokenResponse{}, nil
 				}
 				return nil, errors.New("private application details")
-			})
+			}}
 			router := gin.New()
 			require.NoError(t, registerAPI(router, slog.New(slog.NewTextHandler(io.Discard, nil)), handler))
 			response := httptest.NewRecorder()

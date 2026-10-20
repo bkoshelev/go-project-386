@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/bkoshelev/go-project-386/backend/internal/config"
 	"github.com/bkoshelev/go-project-386/backend/internal/database"
@@ -49,9 +50,16 @@ func run() int {
 	if _, err := os.Stat("frontend/index.html"); err == nil {
 		assets = os.DirFS("frontend")
 	}
+	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		logger.Error("create database pool")
+		return 1
+	}
+	defer pool.Close()
 	router, err := httpserver.NewRouter(logger, gin.ReleaseMode, httpserver.Options{
 		Readiness: db.PingContext,
 		Frontend:  assets,
+		Database:  pool,
 	})
 	if err != nil {
 		logger.Error("create HTTP router", slog.Any("error", err))

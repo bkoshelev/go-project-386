@@ -4,6 +4,7 @@ export default defineConfig({
   testDir: "./tests",
   testIgnore: "container.spec.ts",
   fullyParallel: true,
+  workers: 2,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
@@ -17,10 +18,4 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: {
-    command: "pnpm preview --host 127.0.0.1 --port 4173 --strictPort",
-    url: "http://127.0.0.1:4173",
-    reuseExistingServer: false,
-    timeout: 30_000,
-  },
 });

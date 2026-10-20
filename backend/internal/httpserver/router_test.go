@@ -91,10 +91,8 @@ func newTestRouter(t *testing.T, output io.Writer) *gin.Engine {
 
 func TestOnlyImplementedOperationsAreRegistered(t *testing.T) {
 	router := newTestRouter(t, io.Discard)
-	require.Len(t, router.Routes(), 2)
-	require.Equal(t, "/healthz", router.Routes()[0].Path)
-	require.Equal(t, http.MethodGet, router.Routes()[0].Method)
-	for _, path := range []string{"/api/owner", "/api/event-types", "/api/bookings"} {
+	require.Len(t, router.Routes(), 6)
+	for _, path := range []string{"/api/bookings", "/api/admin/bookings", "/api/admin/availability/weekly"} {
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
 		require.Equal(t, http.StatusNotFound, response.Code)
