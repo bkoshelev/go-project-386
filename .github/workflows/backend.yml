@@ -32,11 +32,23 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Install pinned sqlc
+        run: make tools-sqlc
+        working-directory: ${{ github.workspace }}
+
+      - name: Verify generated database code
+        run: make sqlc-check
+        working-directory: ${{ github.workspace }}
+
+      - name: Verify Docker is available
+        run: docker info
+
       - name: Run go vet
         run: go vet ./...
 
       - name: Run tests with race detector
-        run: go test -race ./...
+        run: make test
+        working-directory: ${{ github.workspace }}
 
       - name: Build packages
         run: go build ./...

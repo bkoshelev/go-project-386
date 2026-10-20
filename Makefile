@@ -16,6 +16,8 @@ GO_VERSION := $(shell awk '$$1 == "go" { print $$2; exit }' "$(BACKEND_DIR)/go.m
 GOLANGCI_LINT_VERSION := 2.13.2
 # Версия сканера уязвимостей закреплена независимо от зависимостей приложения.
 GOVULNCHECK_VERSION := 1.8.0
+# Генератор SQL-запросов устанавливается отдельно от Go-зависимостей приложения.
+SQLC_VERSION := 1.31.1
 # Автоматическая загрузка другого Go toolchain запрещена: команды должны работать на проверенной версии.
 export GOTOOLCHAIN := local
 # Golangci-lint и govulncheck вызывают go как дочерний процесс, поэтому ставим целевой toolchain первым.
@@ -24,12 +26,13 @@ export PATH := $(GO_BIN_DIR):$(PATH)
 # Эти абсолютные пути гарантируют использование установленных проектом версий инструментов.
 GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint
 GOVULNCHECK := $(TOOLS_DIR)/govulncheck
+SQLC := $(TOOLS_DIR)/sqlc
 
 # Все цели служебные: одноимённые файлы не должны мешать выполнению проверок.
-.PHONY: tools lint fmt lint-fix vuln vet test build check api-generate check-go-version check-golangci-lint check-govulncheck
+.PHONY: tools tools-sqlc lint fmt lint-fix vuln vet test test-unit build check sqlc-generate sqlc-check migrate-up migrate-down migrate-status check-go-version check-golangci-lint check-govulncheck check-sqlc api-generate
 
 # tools устанавливает закреплённые инструменты локально после проверки платформы и SHA-256 архива.
-tools: check-go-version
+tools: check-go-version tools-sqlc
 	@set -eu; \
 	os="$$(uname -s | tr '[:upper:]' '[:lower:]')"; \
 	arch="$$(uname -m)"; \
@@ -67,6 +70,32 @@ tools: check-go-version
 	mv -f "$$tmp_dir/bin/govulncheck" "$(GOVULNCHECK)"; \
 	echo "Installed backend tools in $(TOOLS_DIR)"
 
+# Для генерации достаточно установить только sqlc; сборка backend его не требует.
+tools-sqlc: check-go-version
+	@mkdir -p "$(TOOLS_DIR)"
+	@GOBIN="$(TOOLS_DIR)" $(GO) install github.com/sqlc-dev/sqlc/cmd/sqlc@v$(SQLC_VERSION)
+
+# sqlc-generate обновляет сохраняемый в Git Go-код из миграций и запросов.
+sqlc-generate: check-go-version check-sqlc
+	@cd "$(BACKEND_DIR)" && "$(SQLC)" generate
+
+# Генерируем в чистый временный каталог: обнаруживаем также лишние и отсутствующие файлы.
+# Проверка не меняет рабочее дерево и не требует ни Docker, ни запущенной БД.
+sqlc-check: check-go-version check-sqlc
+	@set -eu; \
+	tmp_dir="$$(mktemp -d "$${TMPDIR:-/tmp}/backend-sqlc.XXXXXX")"; \
+	trap 'rm -rf "$$tmp_dir"' EXIT HUP INT TERM; \
+	mkdir -p "$$tmp_dir/internal/database"; \
+	cp "$(BACKEND_DIR)/sqlc.yaml" "$$tmp_dir/sqlc.yaml"; \
+	cp -R "$(BACKEND_DIR)/internal/database/migrations" "$(BACKEND_DIR)/internal/database/queries" "$$tmp_dir/internal/database/"; \
+	cd "$$tmp_dir"; \
+	"$(SQLC)" generate; \
+	diff -ru "$(BACKEND_DIR)/internal/database/db" "$$tmp_dir/internal/database/db"
+
+# Подключение передаётся явно через окружение; эти команды не запускают БД.
+migrate-up migrate-down migrate-status: check-go-version
+	@cd "$(BACKEND_DIR)" && $(GO) run ./cmd/migrate -dsn "$${DATABASE_URL:?Set DATABASE_URL explicitly}" $(patsubst migrate-%,%,$@)
+
 # lint проверяет схему, форматирование, импорты и выбранные линтеры, не изменяя файлы.
 lint: check-go-version check-golangci-lint
 	@cd "$(BACKEND_DIR)" && "$(GOLANGCI_LINT)" config verify
@@ -98,9 +127,14 @@ vuln: check-go-version check-govulncheck
 vet: check-go-version
 	@cd "$(BACKEND_DIR)" && $(GO) vet ./...
 
-# test запускает все backend-тесты с детектором гонок.
+# test запускает все backend-тесты с детектором гонок без кэша результатов:
+# доступность Docker и реальную БД необходимо проверять при каждом вызове.
 test: check-go-version
-	@cd "$(BACKEND_DIR)" && $(GO) test -race ./...
+	@cd "$(BACKEND_DIR)" && $(GO) test -race -count=1 ./...
+
+# Тег unit исключает интеграционный пакет, поэтому Docker не требуется.
+test-unit: check-go-version
+	@cd "$(BACKEND_DIR)" && $(GO) test -race -tags=unit ./...
 
 # build проверяет сборку всех backend-пакетов без создания артефакта в репозитории.
 build: check-go-version
@@ -116,6 +150,7 @@ api-generate: check-go-version
 # check последовательно объединяет все обязательные проверки только для backend.
 check:
 	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" lint
+	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" sqlc-check
 	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" vet
 	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" test
 	@$(MAKE) --no-print-directory -f "$(MAKEFILE_PATH)" build
@@ -145,5 +180,14 @@ check-govulncheck:
 		[ "$$(printf '%s\n' "$$info" | awk '$$1 == "path" { print $$2 }')" != "golang.org/x/vuln/cmd/govulncheck" ] || \
 		[ "$$(printf '%s\n' "$$info" | awk '$$1 == "mod" && $$2 == "golang.org/x/vuln" { print $$3 }')" != "v$(GOVULNCHECK_VERSION)" ]; then \
 		echo "govulncheck v$(GOVULNCHECK_VERSION) is required; run 'make tools'" >&2; \
+		exit 1; \
+	fi
+
+# check-sqlc требует локальный генератор ровно закреплённой версии.
+check-sqlc:
+	@if [ ! -x "$(SQLC)" ] || \
+		! actual="$$("$(SQLC)" version 2>/dev/null)" || \
+		[ "$$actual" != "v$(SQLC_VERSION)" ]; then \
+		echo "sqlc v$(SQLC_VERSION) is required; run 'make tools-sqlc'" >&2; \
 		exit 1; \
 	fi
