@@ -409,6 +409,12 @@ model HealthStatus {
 @operationId("getHealth")
 op getHealth(): HealthStatus;
 
+/** Доступность БД; проверка ограничена двумя секундами. */
+@route("/readyz")
+@get
+@operationId("getReadiness")
+op getReadiness(): HealthStatus | ServiceUnavailable;
+
 /** Единственный заранее заданный профиль с именем владельца для заголовка записи. */
 @route("/api/owner")
 @get

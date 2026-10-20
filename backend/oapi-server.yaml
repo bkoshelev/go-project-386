@@ -5,4 +5,5 @@ generate:
 output-options:
   include-operation-ids:
     - getHealth
+    - getReadiness
 output: internal/api/server.gen.go

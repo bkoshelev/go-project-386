@@ -1,0 +1,12 @@
+.git
+.agents
+.mcp-output
+**/node_modules
+**/bin
+api/generated
+frontend/src/api/generated
+frontend/dist
+frontend/*report
+frontend/test-results
+**/.env*
+artifacts

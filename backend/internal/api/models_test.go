@@ -21,9 +21,10 @@ func TestEmbeddedContractIsComplete(t *testing.T) {
 			operations = append(operations, operation.OperationID)
 		}
 	}
-	require.Len(t, operations, 16)
+	require.Len(t, operations, 17)
 	require.Contains(t, operations, "CreateBooking")
 	require.Contains(t, operations, "GetHealth")
+	require.Contains(t, operations, "GetReadiness")
 	require.Contains(t, schema.Components.Schemas, "OwnerBooking")
 	require.Contains(t, schema.Components.Schemas, "UpdateDateAvailabilityRequest")
 }

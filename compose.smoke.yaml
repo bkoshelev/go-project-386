@@ -1,0 +1,10 @@
+# Only used with a unique project name by scripts/container-smoke.py.
+services:
+  app2:
+    extends:
+      file: compose.yaml
+      service: app
+    environment:
+      HTTP_ADDR: 0.0.0.0:8091
+    ports: !override
+      - "127.0.0.1:0:8091"

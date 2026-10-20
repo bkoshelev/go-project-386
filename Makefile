@@ -191,3 +191,8 @@ check-sqlc:
 		echo "sqlc v$(SQLC_VERSION) is required; run 'make tools-sqlc'" >&2; \
 		exit 1; \
 	fi
+
+# Полный образ и отдельная БД: изолированная проверка с очисткой только своих ресурсов.
+.PHONY: test-container
+test-container:
+	@python3 "$(ROOT_DIR)/scripts/container-smoke.py"
