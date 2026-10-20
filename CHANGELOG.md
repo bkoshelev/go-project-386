@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.0](https://github.com/bkoshelev/go-project-386/compare/v0.4.0...v0.5.0) (2026-10-20)
+
+
+### Features
+
+* add unified application container with external PostgreSQL ([#49](https://github.com/bkoshelev/go-project-386/issues/49)) ([1406d21](https://github.com/bkoshelev/go-project-386/commit/1406d2103c6b9b2715b2f47e5be4edbc88e1969e))
+* **api:** define booking MVP contract and specifications ([#43](https://github.com/bkoshelev/go-project-386/issues/43)) ([f7b40db](https://github.com/bkoshelev/go-project-386/commit/f7b40dbf0cdaa0a9839109acc4070e154133248c))
+* **backend:** add PostgreSQL migrations and sqlc test environment ([#46](https://github.com/bkoshelev/go-project-386/issues/46)) ([b8b4097](https://github.com/bkoshelev/go-project-386/commit/b8b4097ae78179b79e9e01d94ca2541a6a4d922a))
+* **backend:** generate Go HTTP API from TypeSpec ([#45](https://github.com/bkoshelev/go-project-386/issues/45)) ([a8bd3d6](https://github.com/bkoshelev/go-project-386/commit/a8bd3d6cce23565e5900f0510d995b856e18f6be))
+
+
+### Documentation
+
+* allow chained skill invocations ([#47](https://github.com/bkoshelev/go-project-386/issues/47)) ([6108f35](https://github.com/bkoshelev/go-project-386/commit/6108f35aa2bc5ca27c9976958e383fb695befe41))
+
+
+### Miscellaneous Chores
+
+* **dev:** configure mise and direnv with database fixtures ([#48](https://github.com/bkoshelev/go-project-386/issues/48)) ([6a9fc65](https://github.com/bkoshelev/go-project-386/commit/6a9fc65d1e7b5e36c2debe60d7996e91cff9ea86))
+
 ## [0.4.0](https://github.com/bkoshelev/go-project-386/compare/v0.3.3...v0.4.0) (2026-10-19)
 
 
