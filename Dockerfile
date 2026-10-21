@@ -9,7 +9,7 @@ COPY api ./api
 COPY frontend ./frontend
 RUN pnpm --dir frontend build
 
-FROM golang:1.26.9-bookworm AS backend
+FROM golang:1.26.10-bookworm AS backend
 ENV GOTOOLCHAIN=local CGO_ENABLED=0
 WORKDIR /src/backend
 COPY backend/go.mod backend/go.sum ./
