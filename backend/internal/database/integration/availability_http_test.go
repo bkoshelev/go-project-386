@@ -12,33 +12,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bkoshelev/go-project-386/backend/internal/api"
-
 	"github.com/stretchr/testify/require"
 
+	"github.com/bkoshelev/go-project-386/backend/internal/api"
 	"github.com/bkoshelev/go-project-386/backend/internal/httpserver"
 )
 
 func TestAvailabilityIsEmptyUntilOwnerOpensHours(t *testing.T) {
-	router, err := httpserver.NewRouter(slog.New(slog.NewTextHandler(io.Discard, nil)), "test", httpserver.Options{Database: testTransaction(t)})
-	require.NoError(t, err)
-	request := func(method, path string, body any) *httptest.ResponseRecorder {
-		t.Helper()
-		data, err := json.Marshal(body)
-		require.NoError(t, err)
-		req := httptest.NewRequestWithContext(t.Context(), method, path, bytes.NewReader(data))
-		req.Header.Set("Content-Type", "application/json")
-		response := httptest.NewRecorder()
-		router.ServeHTTP(response, req)
-		return response
-	}
-	created := request(http.MethodPost, "/api/admin/event-types", map[string]any{"name": "Встреча", "durationMinutes": 30})
-	require.Equal(t, http.StatusCreated, created.Code, created.Body.String())
-	var event struct {
-		ID string `json:"id"`
-	}
-	require.NoError(t, json.Unmarshal(created.Body.Bytes(), &event))
-	path := "/api/event-types/" + event.ID + "/availability"
+	request := availabilityHTTP(t, time.Now)
+	path := createAvailabilityType(t, request, 30)
 	response := request(http.MethodGet, path, nil)
 	require.Equal(t, http.StatusOK, response.Code, response.Body.String())
 	require.JSONEq(t, `[]`, jsonField(t, response, "slots"))
