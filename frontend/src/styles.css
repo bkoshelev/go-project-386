@@ -31,3 +31,20 @@ main {
   outline: 2px solid var(--mantine-color-blue-7);
   outline-offset: 3px;
 }
+
+.weekly-day {
+  min-width: 0;
+  margin: 0;
+  padding: var(--mantine-spacing-md);
+  border: 1px solid var(--mantine-color-gray-4);
+  border-radius: var(--mantine-radius-md);
+}
+
+.weekly-interval > * {
+  min-width: 120px;
+}
+
+.weekly-day input.weekly-clock:focus-visible {
+  outline: 2px solid var(--mantine-color-blue-7);
+  outline-offset: 3px;
+}

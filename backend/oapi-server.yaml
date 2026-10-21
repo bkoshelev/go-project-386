@@ -10,4 +10,9 @@ output-options:
     - listEventTypes
     - getEventType
     - createEventType
+    - getSchedulingSettings
+    - updateSchedulingSettings
+    - initializeScheduleTimeZone
+    - getWeeklyAvailability
+    - updateWeeklyAvailability
 output: internal/api/server.gen.go

@@ -24,3 +24,10 @@ type ExampleRecord struct {
 	ID    pgtype.UUID
 	Value string
 }
+
+type SchedulingSetting struct {
+	Singleton           bool
+	TimeZone            pgtype.Text
+	MeetingPauseMinutes int32
+	WeeklyAvailability  []byte
+}
