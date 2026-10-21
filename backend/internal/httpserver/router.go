@@ -36,7 +36,7 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	handler := catalogHandler{healthHandler: healthHandler{checkReady: options.Readiness}}
+	handler := applicationHandler{healthHandler: healthHandler{checkReady: options.Readiness}}
 	if options.Database != nil {
 		handler.queries = db.New(options.Database)
 	}
@@ -50,6 +50,11 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 	}
 
 	return router, nil
+}
+
+type applicationHandler struct {
+	healthHandler
+	queries *db.Queries
 }
 
 type healthHandler struct{ checkReady func(context.Context) error }

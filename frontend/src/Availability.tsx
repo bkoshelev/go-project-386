@@ -5,6 +5,7 @@ import {
   getWeeklyAvailability,
   initializeScheduleTimeZone,
   updateWeeklyAvailability,
+  type AvailabilityTimeRange,
   type Weekday,
   type WeeklyAvailability,
 } from "./api/generated";
@@ -115,6 +116,18 @@ function WeeklyEditor({
     setErrors({});
   };
 
+  const changeInterval = (
+    dayIndex: number,
+    intervalIndex: number,
+    update: Partial<AvailabilityTimeRange>,
+  ) => {
+    changeDay(dayIndex, {
+      intervals: week.days[dayIndex].intervals.map((interval, index) =>
+        index === intervalIndex ? { ...interval, ...update } : interval,
+      ),
+    });
+  };
+
   const save = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setMessage("");
@@ -205,12 +218,8 @@ function WeeklyEditor({
                           value={interval.start}
                           error={errors[`/days/${index}/intervals/${intervalIndex}/start`]}
                           onChange={(event) =>
-                            changeDay(index, {
-                              intervals: day.intervals.map((item, i) =>
-                                i === intervalIndex
-                                  ? { ...item, start: event.currentTarget.value }
-                                  : item,
-                              ),
+                            changeInterval(index, intervalIndex, {
+                              start: event.currentTarget.value,
                             })
                           }
                         />
@@ -221,13 +230,7 @@ function WeeklyEditor({
                           value={interval.end}
                           error={errors[`/days/${index}/intervals/${intervalIndex}/end`]}
                           onChange={(event) =>
-                            changeDay(index, {
-                              intervals: day.intervals.map((item, i) =>
-                                i === intervalIndex
-                                  ? { ...item, end: event.currentTarget.value }
-                                  : item,
-                              ),
-                            })
+                            changeInterval(index, intervalIndex, { end: event.currentTarget.value })
                           }
                         />
                         <Button

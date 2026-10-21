@@ -43,7 +43,7 @@ func TestErrorAdapter(t *testing.T) {
 }
 
 type healthStub struct {
-	catalogHandler
+	applicationHandler
 	health func(context.Context, api.GetHealthRequestObject) (api.GetHealthResponseObject, error)
 }
 

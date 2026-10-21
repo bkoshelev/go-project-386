@@ -27,7 +27,8 @@ main {
   border: 0;
 }
 
-:focus-visible {
+:focus-visible,
+.weekly-day input.weekly-clock:focus-visible {
   outline: 2px solid var(--mantine-color-blue-7);
   outline-offset: 3px;
 }
@@ -42,9 +43,4 @@ main {
 
 .weekly-interval > * {
   min-width: 120px;
-}
-
-.weekly-day input.weekly-clock:focus-visible {
-  outline: 2px solid var(--mantine-color-blue-7);
-  outline-offset: 3px;
 }

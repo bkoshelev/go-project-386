@@ -252,3 +252,23 @@ test("изменение паузы не принимает пояс и не и�
     meetingPauseMinutes: 60,
   });
 });
+
+test("неделя возвращается с понедельника по воскресенье независимо от порядка ввода", async ({
+  request,
+  backend,
+}) => {
+  await request.post(zonePath, { data: { timeZone: "UTC" } });
+  const canonical = {
+    days: weekdays.map((weekday) => ({
+      weekday,
+      isBlocked: weekday !== "monday",
+      intervals: weekday === "monday" ? [{ start: "09:00", end: "18:00" }] : [],
+    })),
+  };
+  const reversed = { days: [...canonical.days].reverse() };
+  const response = await request.put(weekPath, { data: reversed });
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toEqual(canonical);
+  await backend.restart();
+  expect(await (await request.get(weekPath)).json()).toEqual(canonical);
+});

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -12,7 +13,7 @@ import (
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
 )
 
-func (h catalogHandler) GetSchedulingSettings(ctx context.Context, _ api.GetSchedulingSettingsRequestObject) (api.GetSchedulingSettingsResponseObject, error) {
+func (h applicationHandler) GetSchedulingSettings(ctx context.Context, _ api.GetSchedulingSettingsRequestObject) (api.GetSchedulingSettingsResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -20,14 +21,10 @@ func (h catalogHandler) GetSchedulingSettings(ctx context.Context, _ api.GetSche
 	if err != nil {
 		return nil, fmt.Errorf("read scheduling settings: %w", err)
 	}
-	settings := api.GetSchedulingSettings200JSONResponse{MeetingPauseMinutes: row.MeetingPauseMinutes}
-	if row.TimeZone.Valid {
-		settings.TimeZone = &row.TimeZone.String
-	}
-	return settings, nil
+	return api.GetSchedulingSettings200JSONResponse(schedulingSettings(row.TimeZone, row.MeetingPauseMinutes)), nil
 }
 
-func (h catalogHandler) InitializeScheduleTimeZone(ctx context.Context, request api.InitializeScheduleTimeZoneRequestObject) (api.InitializeScheduleTimeZoneResponseObject, error) {
+func (h applicationHandler) InitializeScheduleTimeZone(ctx context.Context, request api.InitializeScheduleTimeZoneRequestObject) (api.InitializeScheduleTimeZoneResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -35,10 +32,10 @@ func (h catalogHandler) InitializeScheduleTimeZone(ctx context.Context, request 
 	if err != nil {
 		return nil, fmt.Errorf("initialize schedule time zone: %w", err)
 	}
-	return api.InitializeScheduleTimeZone200JSONResponse{TimeZone: &row.TimeZone.String, MeetingPauseMinutes: row.MeetingPauseMinutes}, nil
+	return api.InitializeScheduleTimeZone200JSONResponse(schedulingSettings(row.TimeZone, row.MeetingPauseMinutes)), nil
 }
 
-func (h catalogHandler) GetWeeklyAvailability(ctx context.Context, _ api.GetWeeklyAvailabilityRequestObject) (api.GetWeeklyAvailabilityResponseObject, error) {
+func (h applicationHandler) GetWeeklyAvailability(ctx context.Context, _ api.GetWeeklyAvailabilityRequestObject) (api.GetWeeklyAvailabilityResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -53,10 +50,15 @@ func (h catalogHandler) GetWeeklyAvailability(ctx context.Context, _ api.GetWeek
 	return week, nil
 }
 
-func (h catalogHandler) UpdateWeeklyAvailability(ctx context.Context, request api.UpdateWeeklyAvailabilityRequestObject) (api.UpdateWeeklyAvailabilityResponseObject, error) {
+func (h applicationHandler) UpdateWeeklyAvailability(ctx context.Context, request api.UpdateWeeklyAvailabilityRequestObject) (api.UpdateWeeklyAvailabilityResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
+	// Request validation guarantees each weekday appears exactly once; persist the contract order.
+	weekdays := []api.Weekday{api.Monday, api.Tuesday, api.Wednesday, api.Thursday, api.Friday, api.Saturday, api.Sunday}
+	slices.SortFunc(request.Body.Days, func(a, b api.WeekdayAvailability) int {
+		return slices.Index(weekdays, a.Weekday) - slices.Index(weekdays, b.Weekday)
+	})
 	data, err := json.Marshal(request.Body)
 	if err != nil {
 		return nil, fmt.Errorf("encode weekly availability: %w", err)
@@ -78,7 +80,7 @@ func (h catalogHandler) UpdateWeeklyAvailability(ctx context.Context, request ap
 	return week, nil
 }
 
-func (h catalogHandler) UpdateSchedulingSettings(ctx context.Context, request api.UpdateSchedulingSettingsRequestObject) (api.UpdateSchedulingSettingsResponseObject, error) {
+func (h applicationHandler) UpdateSchedulingSettings(ctx context.Context, request api.UpdateSchedulingSettingsRequestObject) (api.UpdateSchedulingSettingsResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -86,9 +88,13 @@ func (h catalogHandler) UpdateSchedulingSettings(ctx context.Context, request ap
 	if err != nil {
 		return nil, fmt.Errorf("update scheduling settings: %w", err)
 	}
-	settings := api.UpdateSchedulingSettings200JSONResponse{MeetingPauseMinutes: row.MeetingPauseMinutes}
-	if row.TimeZone.Valid {
-		settings.TimeZone = &row.TimeZone.String
+	return api.UpdateSchedulingSettings200JSONResponse(schedulingSettings(row.TimeZone, row.MeetingPauseMinutes)), nil
+}
+
+func schedulingSettings(timeZone pgtype.Text, meetingPauseMinutes int32) api.SchedulingSettings {
+	settings := api.SchedulingSettings{MeetingPauseMinutes: meetingPauseMinutes}
+	if timeZone.Valid {
+		settings.TimeZone = &timeZone.String
 	}
-	return settings, nil
+	return settings
 }
