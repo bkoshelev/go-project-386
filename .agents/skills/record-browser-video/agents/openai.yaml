@@ -1,0 +1,6 @@
+interface:
+  display_name: "Record Browser Video"
+  short_description: "Записать MP4 через Chrome DevTools MCP"
+  default_prompt: "Используй $record-browser-video, чтобы записать демонстрацию локального приложения через Chrome DevTools MCP и вернуть ссылку на MP4."
+policy:
+  allow_implicit_invocation: false
