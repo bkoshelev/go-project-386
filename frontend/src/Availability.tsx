@@ -10,7 +10,7 @@ import {
   type WeeklyAvailability,
 } from "./api/generated";
 import { validateWeek } from "./availability-validation";
-import { useRead } from "./catalog";
+import { useRead } from "./shared/useRead";
 
 const dayNames: Record<Weekday, string> = {
   monday: "Понедельник",

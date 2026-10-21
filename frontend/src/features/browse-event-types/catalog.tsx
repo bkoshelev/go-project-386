@@ -6,19 +6,21 @@ import { useRead, type ReadState } from "../../shared/useRead";
 export const readCatalog = async (signal: AbortSignal) =>
   (await listEventTypes({ signal, throwOnError: true })).data;
 
-export function GuestEventCatalog() {
+export function GuestEventCatalog({ onContinue }: { onContinue?: (id: string) => void }) {
   const { state, reload } = useRead(readCatalog);
-  return <EventCatalog state={state} reload={reload} guest />;
+  return <EventCatalog state={state} reload={reload} guest onContinue={onContinue} />;
 }
 
 export function EventCatalog({
   state,
   reload,
   guest = false,
+  onContinue,
 }: {
   state: ReadState<EventTypes>;
   reload: () => void;
   guest?: boolean;
+  onContinue?: (id: string) => void;
 }) {
   const [selected, setSelected] = useState("");
   if (state.status === "loading") return <Text component="output">Загрузка типов событий…</Text>;
@@ -51,9 +53,16 @@ export function EventCatalog({
     </Stack>
   );
   return guest ? (
-    <Radio.Group label="Выберите тип события" value={selected} onChange={setSelected}>
-      {items}
-    </Radio.Group>
+    <Stack align="stretch">
+      <Radio.Group label="Выберите тип события" value={selected} onChange={setSelected}>
+        {items}
+      </Radio.Group>
+      {onContinue && (
+        <Button disabled={!selected} onClick={() => onContinue(selected)}>
+          Выбрать время
+        </Button>
+      )}
+    </Stack>
   ) : (
     items
   );

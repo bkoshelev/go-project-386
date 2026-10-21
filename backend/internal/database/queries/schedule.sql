@@ -18,3 +18,6 @@ RETURNING weekly_availability;
 UPDATE scheduling_settings SET meeting_pause_minutes = $1
 WHERE singleton = TRUE
 RETURNING time_zone, meeting_pause_minutes;
+
+-- name: GetAvailabilitySchedule :one
+SELECT time_zone, weekly_availability FROM scheduling_settings WHERE singleton = TRUE;

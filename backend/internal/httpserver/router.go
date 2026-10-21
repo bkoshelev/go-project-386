@@ -23,6 +23,8 @@ type Options struct {
 	Readiness func(context.Context) error
 	// Frontend contains the production assets; nil disables frontend serving.
 	Frontend fs.FS
+	// Now supplies the server clock; nil uses time.Now.
+	Now func() time.Time
 }
 
 // NewRouter creates the backend HTTP router with logging and panic recovery.
@@ -36,7 +38,10 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	handler := applicationHandler{healthHandler: healthHandler{checkReady: options.Readiness}}
+	if options.Now == nil {
+		options.Now = time.Now
+	}
+	handler := applicationHandler{healthHandler: healthHandler{checkReady: options.Readiness}, now: options.Now}
 	if options.Database != nil {
 		handler.queries = db.New(options.Database)
 	}
@@ -55,6 +60,7 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 type applicationHandler struct {
 	healthHandler
 	queries *db.Queries
+	now     func() time.Time
 }
 
 type healthHandler struct{ checkReady func(context.Context) error }

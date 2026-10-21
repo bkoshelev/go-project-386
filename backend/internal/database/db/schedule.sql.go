@@ -11,6 +11,22 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const getAvailabilitySchedule = `-- name: GetAvailabilitySchedule :one
+SELECT time_zone, weekly_availability FROM scheduling_settings WHERE singleton = TRUE
+`
+
+type GetAvailabilityScheduleRow struct {
+	TimeZone           pgtype.Text
+	WeeklyAvailability []byte
+}
+
+func (q *Queries) GetAvailabilitySchedule(ctx context.Context) (GetAvailabilityScheduleRow, error) {
+	row := q.db.QueryRow(ctx, getAvailabilitySchedule)
+	var i GetAvailabilityScheduleRow
+	err := row.Scan(&i.TimeZone, &i.WeeklyAvailability)
+	return i, err
+}
+
 const getSchedulingSettings = `-- name: GetSchedulingSettings :one
 SELECT time_zone, meeting_pause_minutes FROM scheduling_settings WHERE singleton = TRUE
 `

@@ -9,6 +9,7 @@ output-options:
     - getCalendarOwner
     - listEventTypes
     - getEventType
+    - getEventAvailability
     - createEventType
     - getSchedulingSettings
     - updateSchedulingSettings

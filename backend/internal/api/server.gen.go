@@ -41,6 +41,9 @@ type ServerInterface interface {
 	// (GET /api/event-types/{eventTypeId})
 	GetEventType(c *gin.Context, eventTypeId EventTypeId)
 
+	// (GET /api/event-types/{eventTypeId}/availability)
+	GetEventAvailability(c *gin.Context, eventTypeId EventTypeId)
+
 	// (GET /api/owner)
 	GetCalendarOwner(c *gin.Context)
 
@@ -176,6 +179,31 @@ func (siw *ServerInterfaceWrapper) GetEventType(c *gin.Context) {
 	siw.Handler.GetEventType(c, eventTypeId)
 }
 
+// GetEventAvailability operation middleware
+func (siw *ServerInterfaceWrapper) GetEventAvailability(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "eventTypeId" -------------
+	var eventTypeId EventTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventTypeId", c.Param("eventTypeId"), &eventTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter eventTypeId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEventAvailability(c, eventTypeId)
+}
+
 // GetCalendarOwner operation middleware
 func (siw *ServerInterfaceWrapper) GetCalendarOwner(c *gin.Context) {
 
@@ -250,6 +278,7 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.POST(options.BaseURL+"/api/admin/scheduling-settings/time-zone", wrapper.InitializeScheduleTimeZone)
 	router.GET(options.BaseURL+"/api/event-types", wrapper.ListEventTypes)
 	router.GET(options.BaseURL+"/api/event-types/:eventTypeId", wrapper.GetEventType)
+	router.GET(options.BaseURL+"/api/event-types/:eventTypeId/availability", wrapper.GetEventAvailability)
 	router.GET(options.BaseURL+"/api/owner", wrapper.GetCalendarOwner)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadiness)
@@ -875,6 +904,96 @@ func (response GetEventType503JSONResponse) VisitGetEventTypeResponse(w http.Res
 	return err
 }
 
+type GetEventAvailabilityRequestObject struct {
+	EventTypeId EventTypeId `json:"eventTypeId"`
+}
+
+type GetEventAvailabilityResponseObject interface {
+	VisitGetEventAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type GetEventAvailability200JSONResponse EventAvailability
+
+func (response GetEventAvailability200JSONResponse) VisitGetEventAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventAvailability400JSONResponse struct {
+	Code    GetEventAvailability400JSONResponseBodyCode `json:"code"`
+	Message string                                      `json:"message"`
+}
+
+func (response GetEventAvailability400JSONResponse) VisitGetEventAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventAvailability404JSONResponse struct {
+	Code    GetEventAvailability404JSONResponseBodyCode `json:"code"`
+	Message string                                      `json:"message"`
+}
+
+func (response GetEventAvailability404JSONResponse) VisitGetEventAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventAvailability500JSONResponse struct {
+	Code    GetEventAvailability500JSONResponseBodyCode `json:"code"`
+	Message string                                      `json:"message"`
+}
+
+func (response GetEventAvailability500JSONResponse) VisitGetEventAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventAvailability503JSONResponse struct {
+	Code    GetEventAvailability503JSONResponseBodyCode `json:"code"`
+	Message string                                      `json:"message"`
+}
+
+func (response GetEventAvailability503JSONResponse) VisitGetEventAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetCalendarOwnerRequestObject struct {
 }
 
@@ -1015,6 +1134,9 @@ type StrictServerInterface interface {
 
 	// (GET /api/event-types/{eventTypeId})
 	GetEventType(ctx context.Context, request GetEventTypeRequestObject) (GetEventTypeResponseObject, error)
+
+	// (GET /api/event-types/{eventTypeId}/availability)
+	GetEventAvailability(ctx context.Context, request GetEventAvailabilityRequestObject) (GetEventAvailabilityResponseObject, error)
 
 	// (GET /api/owner)
 	GetCalendarOwner(ctx context.Context, request GetCalendarOwnerRequestObject) (GetCalendarOwnerResponseObject, error)
@@ -1298,6 +1420,32 @@ func (sh *strictHandler) GetEventType(ctx *gin.Context, eventTypeId EventTypeId)
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(GetEventTypeResponseObject); ok {
 		if err := validResponse.VisitGetEventTypeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEventAvailability operation middleware
+func (sh *strictHandler) GetEventAvailability(ctx *gin.Context, eventTypeId EventTypeId) {
+	var request GetEventAvailabilityRequestObject
+
+	request.EventTypeId = eventTypeId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEventAvailability(ctx, request.(GetEventAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEventAvailability")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetEventAvailabilityResponseObject); ok {
+		if err := validResponse.VisitGetEventAvailabilityResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
