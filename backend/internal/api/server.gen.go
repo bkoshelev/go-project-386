@@ -11,10 +11,23 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oapi-codegen/runtime"
 )
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (POST /api/admin/event-types)
+	CreateEventType(c *gin.Context)
+
+	// (GET /api/event-types)
+	ListEventTypes(c *gin.Context)
+
+	// (GET /api/event-types/{eventTypeId})
+	GetEventType(c *gin.Context, eventTypeId EventTypeId)
+
+	// (GET /api/owner)
+	GetCalendarOwner(c *gin.Context)
 
 	// (GET /healthz)
 	GetHealth(c *gin.Context)
@@ -31,6 +44,70 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// CreateEventType operation middleware
+func (siw *ServerInterfaceWrapper) CreateEventType(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateEventType(c)
+}
+
+// ListEventTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListEventTypes(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListEventTypes(c)
+}
+
+// GetEventType operation middleware
+func (siw *ServerInterfaceWrapper) GetEventType(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "eventTypeId" -------------
+	var eventTypeId EventTypeId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "eventTypeId", c.Param("eventTypeId"), &eventTypeId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter eventTypeId: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetEventType(c, eventTypeId)
+}
+
+// GetCalendarOwner operation middleware
+func (siw *ServerInterfaceWrapper) GetCalendarOwner(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetCalendarOwner(c)
+}
 
 // GetHealth operation middleware
 func (siw *ServerInterfaceWrapper) GetHealth(c *gin.Context) {
@@ -85,8 +162,299 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.POST(options.BaseURL+"/api/admin/event-types", wrapper.CreateEventType)
+	router.GET(options.BaseURL+"/api/event-types", wrapper.ListEventTypes)
+	router.GET(options.BaseURL+"/api/event-types/:eventTypeId", wrapper.GetEventType)
+	router.GET(options.BaseURL+"/api/owner", wrapper.GetCalendarOwner)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadiness)
+}
+
+type CreateEventTypeRequestObject struct {
+	Body *CreateEventTypeJSONRequestBody
+}
+
+type CreateEventTypeResponseObject interface {
+	VisitCreateEventTypeResponse(w http.ResponseWriter) error
+}
+
+type CreateEventType201JSONResponse EventType
+
+func (response CreateEventType201JSONResponse) VisitCreateEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEventType400JSONResponse struct {
+	Code    CreateEventType400JSONResponseBodyCode `json:"code"`
+	Message string                                 `json:"message"`
+}
+
+func (response CreateEventType400JSONResponse) VisitCreateEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEventType422JSONResponse ValidationError
+
+func (response CreateEventType422JSONResponse) VisitCreateEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEventType500JSONResponse struct {
+	Code    CreateEventType500JSONResponseBodyCode `json:"code"`
+	Message string                                 `json:"message"`
+}
+
+func (response CreateEventType500JSONResponse) VisitCreateEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateEventType503JSONResponse struct {
+	Code    CreateEventType503JSONResponseBodyCode `json:"code"`
+	Message string                                 `json:"message"`
+}
+
+func (response CreateEventType503JSONResponse) VisitCreateEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventTypesRequestObject struct {
+}
+
+type ListEventTypesResponseObject interface {
+	VisitListEventTypesResponse(w http.ResponseWriter) error
+}
+
+type ListEventTypes200JSONResponse EventTypes
+
+func (response ListEventTypes200JSONResponse) VisitListEventTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventTypes500JSONResponse struct {
+	Code    ListEventTypes500JSONResponseBodyCode `json:"code"`
+	Message string                                `json:"message"`
+}
+
+func (response ListEventTypes500JSONResponse) VisitListEventTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListEventTypes503JSONResponse struct {
+	Code    ListEventTypes503JSONResponseBodyCode `json:"code"`
+	Message string                                `json:"message"`
+}
+
+func (response ListEventTypes503JSONResponse) VisitListEventTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventTypeRequestObject struct {
+	EventTypeId EventTypeId `json:"eventTypeId"`
+}
+
+type GetEventTypeResponseObject interface {
+	VisitGetEventTypeResponse(w http.ResponseWriter) error
+}
+
+type GetEventType200JSONResponse EventType
+
+func (response GetEventType200JSONResponse) VisitGetEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventType400JSONResponse struct {
+	Code    GetEventType400JSONResponseBodyCode `json:"code"`
+	Message string                              `json:"message"`
+}
+
+func (response GetEventType400JSONResponse) VisitGetEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventType404JSONResponse struct {
+	Code    GetEventType404JSONResponseBodyCode `json:"code"`
+	Message string                              `json:"message"`
+}
+
+func (response GetEventType404JSONResponse) VisitGetEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventType500JSONResponse struct {
+	Code    GetEventType500JSONResponseBodyCode `json:"code"`
+	Message string                              `json:"message"`
+}
+
+func (response GetEventType500JSONResponse) VisitGetEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetEventType503JSONResponse struct {
+	Code    GetEventType503JSONResponseBodyCode `json:"code"`
+	Message string                              `json:"message"`
+}
+
+func (response GetEventType503JSONResponse) VisitGetEventTypeResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarOwnerRequestObject struct {
+}
+
+type GetCalendarOwnerResponseObject interface {
+	VisitGetCalendarOwnerResponse(w http.ResponseWriter) error
+}
+
+type GetCalendarOwner200JSONResponse CalendarOwnerProfile
+
+func (response GetCalendarOwner200JSONResponse) VisitGetCalendarOwnerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarOwner500JSONResponse struct {
+	Code    GetCalendarOwner500JSONResponseBodyCode `json:"code"`
+	Message string                                  `json:"message"`
+}
+
+func (response GetCalendarOwner500JSONResponse) VisitGetCalendarOwnerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCalendarOwner503JSONResponse struct {
+	Code    GetCalendarOwner503JSONResponseBodyCode `json:"code"`
+	Message string                                  `json:"message"`
+}
+
+func (response GetCalendarOwner503JSONResponse) VisitGetCalendarOwnerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type GetHealthRequestObject struct {
@@ -151,6 +519,18 @@ func (response GetReadiness503JSONResponse) VisitGetReadinessResponse(w http.Res
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (POST /api/admin/event-types)
+	CreateEventType(ctx context.Context, request CreateEventTypeRequestObject) (CreateEventTypeResponseObject, error)
+
+	// (GET /api/event-types)
+	ListEventTypes(ctx context.Context, request ListEventTypesRequestObject) (ListEventTypesResponseObject, error)
+
+	// (GET /api/event-types/{eventTypeId})
+	GetEventType(ctx context.Context, request GetEventTypeRequestObject) (GetEventTypeResponseObject, error)
+
+	// (GET /api/owner)
+	GetCalendarOwner(ctx context.Context, request GetCalendarOwnerRequestObject) (GetCalendarOwnerResponseObject, error)
+
 	// (GET /healthz)
 	GetHealth(ctx context.Context, request GetHealthRequestObject) (GetHealthResponseObject, error)
 
@@ -213,6 +593,111 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictGinServerOptions
+}
+
+// CreateEventType operation middleware
+func (sh *strictHandler) CreateEventType(ctx *gin.Context) {
+	var request CreateEventTypeRequestObject
+
+	var body CreateEventTypeJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateEventType(ctx, request.(CreateEventTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateEventType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateEventTypeResponseObject); ok {
+		if err := validResponse.VisitCreateEventTypeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListEventTypes operation middleware
+func (sh *strictHandler) ListEventTypes(ctx *gin.Context) {
+	var request ListEventTypesRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListEventTypes(ctx, request.(ListEventTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListEventTypes")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListEventTypesResponseObject); ok {
+		if err := validResponse.VisitListEventTypesResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetEventType operation middleware
+func (sh *strictHandler) GetEventType(ctx *gin.Context, eventTypeId EventTypeId) {
+	var request GetEventTypeRequestObject
+
+	request.EventTypeId = eventTypeId
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetEventType(ctx, request.(GetEventTypeRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetEventType")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetEventTypeResponseObject); ok {
+		if err := validResponse.VisitGetEventTypeResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCalendarOwner operation middleware
+func (sh *strictHandler) GetCalendarOwner(ctx *gin.Context) {
+	var request GetCalendarOwnerRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetCalendarOwner(ctx, request.(GetCalendarOwnerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCalendarOwner")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetCalendarOwnerResponseObject); ok {
+		if err := validResponse.VisitGetCalendarOwnerResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetHealth operation middleware

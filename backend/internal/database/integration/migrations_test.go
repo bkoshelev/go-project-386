@@ -35,8 +35,9 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 
 	applied, err := provider.Up(ctx)
 	require.NoError(t, err)
-	require.Len(t, applied, 1)
+	require.Len(t, applied, 2)
 	assert.EqualValues(t, 1, applied[0].Source.Version)
+	assert.EqualValues(t, 2, applied[1].Source.Version)
 	var relation string
 	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('example_records')::text").Scan(&relation))
 	assert.Equal(t, "example_records", relation)
@@ -47,17 +48,18 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 
 	reverted, err := provider.Down(ctx)
 	require.NoError(t, err)
-	assert.EqualValues(t, 1, reverted.Source.Version)
+	assert.EqualValues(t, 2, reverted.Source.Version)
 	var missing bool
-	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('example_records') IS NULL").Scan(&missing))
-	assert.True(t, missing, "down must remove the example table")
+	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('event_types') IS NULL").Scan(&missing))
+	assert.True(t, missing, "down must remove the event types table")
 
 	applied, err = provider.Up(ctx)
 	require.NoError(t, err)
 	require.Len(t, applied, 1)
 	status, err := provider.Status(ctx)
 	require.NoError(t, err)
-	require.Len(t, status, 1)
+	require.Len(t, status, 2)
+	assert.Equal(t, goose.StateApplied, status[1].State)
 	assert.Equal(t, goose.StateApplied, status[0].State)
 	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('example_records')::text").Scan(&relation))
 	assert.Equal(t, "example_records", relation)

@@ -8,6 +8,18 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type CalendarOwner struct {
+	Singleton bool
+	FullName  string
+}
+
+type EventType struct {
+	ID              pgtype.UUID
+	Name            string
+	Description     pgtype.Text
+	DurationMinutes int32
+}
+
 type ExampleRecord struct {
 	ID    pgtype.UUID
 	Value string

@@ -12,10 +12,13 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
+	"github.com/bkoshelev/go-project-386/backend/internal/database/db"
 )
 
 // Options supplies the external dependencies served by the router.
 type Options struct {
+	// Database supplies the application's PostgreSQL connection pool.
+	Database db.DBTX
 	// Readiness checks database access using the request's bounded context.
 	Readiness func(context.Context) error
 	// Frontend contains the production assets; nil disables frontend serving.
@@ -33,7 +36,11 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	if err := registerAPI(router, logger, healthHandler{checkReady: options.Readiness}); err != nil {
+	handler := catalogHandler{healthHandler: healthHandler{checkReady: options.Readiness}}
+	if options.Database != nil {
+		handler.queries = db.New(options.Database)
+	}
+	if err := registerAPI(router, logger, handler); err != nil {
 		return nil, err
 	}
 	if options.Frontend != nil {

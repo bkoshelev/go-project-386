@@ -1,9 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 const description =
   "Сервис для бронирования встреч. Выберите удобное время для очной встречи или звонка";
 
-test("главная страница представляет сервис и пока не позволяет записаться", async ({ page }) => {
+test("главная страница представляет сервис и открывает запись", async ({ page }) => {
   await page.goto("/");
 
   await expect(page).toHaveTitle("Календарь встреч");
@@ -12,10 +12,13 @@ test("главная страница представляет сервис и �
   ).toBeVisible();
   await expect(page.getByRole("main").getByText(description, { exact: true })).toBeVisible();
 
-  const bookingButton = page.getByRole("banner").getByRole("button", { name: "Записаться" });
+  const bookingButton = page.getByRole("banner").getByRole("link", { name: "Записаться" });
   await expect(bookingButton).toBeVisible();
-  await expect(bookingButton).toBeDisabled();
-  await expect(page.getByRole("button")).toHaveCount(1);
+  await expect(bookingButton).toHaveAttribute("href", "/book");
+  await expect(page.getByRole("link", { name: "Администрирование" })).toHaveAttribute(
+    "href",
+    "/admin",
+  );
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
@@ -25,7 +28,7 @@ for (const width of [320, 375, 768, 1440]) {
     await page.goto("/");
 
     const title = page.getByRole("heading", { level: 1, name: "Календарь встреч" });
-    const button = page.getByRole("button", { name: "Записаться" });
+    const button = page.getByRole("link", { name: "Записаться" });
     const text = page.getByRole("main").getByText(description, { exact: true });
     await expect(title).toBeVisible();
     await expect(button).toBeVisible();
@@ -38,10 +41,7 @@ for (const width of [320, 375, 768, 1440]) {
     const headerBox = (await page.getByRole("banner").boundingBox())!;
 
     expect(titleBox.x).toBeGreaterThan(0);
-    expect(titleBox.x + titleBox.width).toBeLessThanOrEqual(buttonBox.x);
     expect(buttonBox.x + buttonBox.width).toBeLessThan(width);
-    expect(titleBox.y).toBeLessThan(buttonBox.y + buttonBox.height);
-    expect(buttonBox.y).toBeLessThan(titleBox.y + titleBox.height);
     expect(textBox.y).toBeGreaterThan(headerBox.y + headerBox.height);
     expect(textBox.x).toBeCloseTo(titleBox.x, 0);
     expect(textBox.x + textBox.width).toBeLessThan(width);
