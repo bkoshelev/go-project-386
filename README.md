@@ -224,6 +224,12 @@ make api-generate
 интерфейса запустите `pnpm dev` из `frontend/` и передайте агенту адрес,
 напечатанный Vite.
 
+Для записи демонстрации в MP4 явно вызовите
+[`$record-browser-video`](.agents/skills/record-browser-video/SKILL.md), например:
+`$record-browser-video запиши создание типа события и его выбор гостем`.
+Скилл использует Chrome DevTools MCP, проверяет видео через `ffmpeg` и `ffprobe`
+и сохраняет результат в исключённый из Git каталог `artifacts/`.
+
 ### Бэкенд
 
 Для бэкенда нужен именно Go 1.26.10. Версия закреплена в `backend/go.mod` и
