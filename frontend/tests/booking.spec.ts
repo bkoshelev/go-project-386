@@ -27,7 +27,16 @@ test("гость проходит от главной до подтвержде�
   await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
     "anna@example.com",
   );
-  await page.getByRole("button", { name: "Забронировать" }).click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.screenshot({ path: testInfo.outputPath("booking-contacts-320.png"), fullPage: true });
+  await page.getByRole("textbox", { name: "Email", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  const submit = page.getByRole("button", { name: "Забронировать" });
+  await expect(submit).toBeFocused();
+  expect(await submit.evaluate((element) => getComputedStyle(element).outlineStyle)).not.toBe(
+    "none",
+  );
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toBeFocused();
   await expect(page.getByText("Обсуждение", { exact: true })).toBeVisible();
   await expect(page.getByText(/Часовой пояс:/)).toBeVisible();
@@ -151,11 +160,19 @@ test("ошибки email остаются у поля, корректный ад
   const { start } = await prepareBooking(request);
   await contactStep(page, start.slice(0, 10));
   const email = page.getByRole("textbox", { name: "Email", exact: true });
-  await email.fill("wrong");
-  await page.getByRole("button", { name: "Забронировать" }).click();
-  await expect(email).toBeFocused();
-  await expect(page.getByText("Введите корректный email", { exact: true })).toBeVisible();
-  await expect(email).toHaveValue("wrong");
+  let writes = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/bookings")
+      writes++;
+  });
+  for (const invalid of ["wrong", "a..b@example.com", ".anna@example.com", "anna@example..com"]) {
+    await email.fill(invalid);
+    await page.getByRole("button", { name: "Забронировать" }).click();
+    await expect(email).toBeFocused();
+    await expect(page.getByText("Введите корректный email", { exact: true })).toBeVisible();
+    await expect(email).toHaveValue(invalid);
+    expect(writes).toBe(0);
+  }
   expect((await (await request.get("/api/admin/bookings")).json()).items).toHaveLength(0);
   await email.fill("anna@localhost");
   await page.getByRole("button", { name: "Забронировать" }).click();

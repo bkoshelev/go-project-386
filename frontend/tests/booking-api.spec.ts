@@ -27,29 +27,37 @@ test("сохранение подтверждается после записи 
   expect(list.items).toEqual([{ ...saved, guest: { name: "Анна", email: "anna@example.com" } }]);
 });
 
-test("конкурирующие типы дают один 201 и один 409, повтор и общая доступность учитывают запись", async ({
-  request,
-}) => {
-  const { events, start } = await prepareBooking(request);
-  const results = await Promise.all(
-    events.map((event) => request.post(bookingPath, { data: booking(event.id, start) })),
-  );
-  expect(results.map((response) => response.status()).sort((a, b) => a - b)).toEqual([201, 409]);
-  const conflict = results.find((response) => response.status() === 409)!;
-  expect(await conflict.json()).toEqual({ code: "time_occupied", message: "Время уже занято" });
-  for (const event of events) {
-    const repeat = await request.post(bookingPath, { data: booking(event.id, start) });
-    expect(repeat.status()).toBe(409);
-    expect(await repeat.json()).toMatchObject({ code: "time_occupied" });
-    const available = await (await request.get(`/api/event-types/${event.id}/availability`)).json();
-    expect(available.slots.some((slot: { startsAt: string }) => slot.startsAt === start)).toBe(
-      false,
+for (const differentTypes of [false, true]) {
+  test(`конкурирующие запросы ${differentTypes ? "разных" : "одного"} типов дают один 201 и один 409`, async ({
+    request,
+  }) => {
+    const { events, start } = await prepareBooking(request);
+    const results = await Promise.all(
+      events.map((event) =>
+        request.post(bookingPath, {
+          data: booking(differentTypes ? event.id : events[0].id, start),
+        }),
+      ),
     );
-    expect(JSON.stringify(available)).not.toContain("anna@example.com");
-    expect(JSON.stringify(available)).not.toContain("guest");
-  }
-  expect((await (await request.get(ownerPath)).json()).items).toHaveLength(1);
-});
+    expect(results.map((response) => response.status()).sort((a, b) => a - b)).toEqual([201, 409]);
+    const conflict = results.find((response) => response.status() === 409)!;
+    expect(await conflict.json()).toEqual({ code: "time_occupied", message: "Время уже занято" });
+    for (const event of events) {
+      const repeat = await request.post(bookingPath, { data: booking(event.id, start) });
+      expect(repeat.status()).toBe(409);
+      expect(await repeat.json()).toMatchObject({ code: "time_occupied" });
+      const available = await (
+        await request.get(`/api/event-types/${event.id}/availability`)
+      ).json();
+      expect(available.slots.some((slot: { startsAt: string }) => slot.startsAt === start)).toBe(
+        false,
+      );
+      expect(JSON.stringify(available)).not.toContain("anna@example.com");
+      expect(JSON.stringify(available)).not.toContain("guest");
+    }
+    expect((await (await request.get(ownerPath)).json()).items).toHaveLength(1);
+  });
+}
 
 test("валидация полей и формата не сохраняет встреч, повтор несохранённой попытки возможен", async ({
   request,

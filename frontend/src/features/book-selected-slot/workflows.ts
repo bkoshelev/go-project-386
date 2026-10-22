@@ -14,6 +14,33 @@ export type SaveResult =
   | { kind: "rejected" }
   | { kind: "unknown" };
 
+// Match canonical dot-atoms accepted by the server, including Unicode and local domains.
+// Display names and quoted local parts are not canonical BookingGuest email values.
+function validEmail(email: string) {
+  const parts = email.split("@");
+  if (parts.length !== 2) return false;
+  const atom = /^[!#$%&'*+/=?^_`{|}~0-9A-Za-z\u0080-\u{10ffff}-]+$/u;
+  const dotAtom = (value: string) =>
+    value.split(".").every((part) => part.length > 0 && atom.test(part));
+  if (!dotAtom(parts[0])) return false;
+  const domain = parts[1];
+  if (!domain.startsWith("[")) return dotAtom(domain);
+  if (!domain.endsWith("]")) return false;
+  const address = domain.slice(1, -1);
+  if (!address.includes(":")) {
+    const octets = address.split(".");
+    return (
+      octets.length === 4 &&
+      octets.every((octet) => /^(0|[1-9][0-9]{0,2})$/.test(octet) && Number(octet) <= 255)
+    );
+  }
+  try {
+    return new URL(`http://${domain}`).hostname.startsWith("[");
+  } catch {
+    return false;
+  }
+}
+
 export function validateGuest(guest: BookingGuest): FieldErrors {
   const errors: FieldErrors = {};
   const name = guest.name.trim();
@@ -22,7 +49,7 @@ export function validateGuest(guest: BookingGuest): FieldErrors {
   else if (Array.from(name).length > 100) errors.name = "Имя должно содержать до 100 символов";
   if (!email) errors.email = "Введите email";
   else if (Array.from(email).length > 254) errors.email = "Email должен содержать до 254 символов";
-  else if (!/^[^\s@]+@[^\s@]+$/.test(email)) errors.email = "Введите корректный email";
+  else if (!validEmail(email)) errors.email = "Введите корректный email";
   return errors;
 }
 
