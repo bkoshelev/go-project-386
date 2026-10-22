@@ -19,11 +19,7 @@ type Result struct {
 
 // Calculate suggests future quarter-hour starts fitting entirely in continuous
 // working time and the fourteen-date UTC window. A nil location means uninitialized.
-func Calculate(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time, overrides ...map[string]scheduling.Date) Result {
-	var dates map[string]scheduling.Date
-	if len(overrides) > 0 {
-		dates = overrides[0]
-	}
+func Calculate(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time, dates map[string]scheduling.Date) Result {
 	return newSnapshot(week, location, duration, now, dates).Suggestions()
 }
 

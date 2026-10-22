@@ -22,11 +22,17 @@ export function DateAvailability({ timeZone }: { timeZone: string }) {
   const { draft, errors } = state.context;
   const saving = state.matches("saving");
   const formRef = useRef<HTMLFormElement>(null);
+  const alertRef = useRef<HTMLParagraphElement>(null);
+  const failure =
+    state.matches("loadFailed") ||
+    state.matches({ editable: "unknown" }) ||
+    state.matches({ editable: "rejected" });
   const custom = draft?.intervals !== undefined;
   useEffect(() => {
     if (Object.keys(errors).length > 0)
       formRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
-  }, [errors]);
+    else if (failure) alertRef.current?.focus();
+  }, [errors, failure]);
 
   return (
     <Stack component="section" aria-labelledby="date-availability-title">
@@ -45,7 +51,9 @@ export function DateAvailability({ timeZone }: { timeZone: string }) {
       {state.matches("loading") && <Text component="output">Загрузка настройки даты…</Text>}
       {state.matches("loadFailed") && (
         <Stack>
-          <Text role="alert">Не удалось загрузить настройку даты</Text>
+          <Text role="alert" ref={alertRef} tabIndex={-1}>
+            Не удалось загрузить настройку даты
+          </Text>
           <Button onClick={() => send({ type: "reload" })}>Повторить чтение даты</Button>
         </Stack>
       )}
@@ -146,14 +154,14 @@ export function DateAvailability({ timeZone }: { timeZone: string }) {
               <Text component="output">Настройка даты сохранена</Text>
             )}
             {state.matches({ editable: "rejected" }) && (
-              <Text role="alert">
+              <Text role="alert" ref={alertRef} tabIndex={-1}>
                 {Object.keys(errors).length > 0
                   ? "Проверьте интервалы даты"
                   : "Не удалось сохранить настройку даты. Повторите сохранение."}
               </Text>
             )}
             {state.matches({ editable: "unknown" }) && (
-              <Text role="alert">
+              <Text role="alert" ref={alertRef} tabIndex={-1}>
                 Результат сохранения неизвестен. Ввод сохранён. Прочитайте настройку даты или
                 повторите сохранение вручную.
               </Text>
