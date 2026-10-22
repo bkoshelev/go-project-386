@@ -45,7 +45,7 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 	if options.Database != nil {
 		handler.queries = db.New(options.Database)
 	}
-	if err := registerAPI(router, logger, handler); err != nil {
+	if err := registerAPI(router, logger, handler, options.Database); err != nil {
 		return nil, err
 	}
 	if options.Frontend != nil {
@@ -81,12 +81,15 @@ func (h healthHandler) GetReadiness(ctx context.Context, _ api.GetReadinessReque
 	return api.GetReadiness200JSONResponse{Status: api.Ok}, nil
 }
 
-func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface) error {
+func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface, database db.DBTX) error {
 	validator, err := newRequestValidator()
 	if err != nil {
 		return err
 	}
 	adapter := errorAdapter{logger: logger}
+	if pool, ok := database.(interface{ Reset() }); ok {
+		adapter.resetDatabase = pool.Reset
+	}
 	strict := api.NewStrictHandlerWithOptions(handler, nil, api.StrictGinServerOptions{
 		RequestErrorHandlerFunc:  adapter.requestError,
 		HandlerErrorFunc:         adapter.internalError,

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
@@ -71,10 +73,38 @@ func TestStrictHandlerErrorsUseContract(t *testing.T) {
 				return nil, errors.New("private application details")
 			}}
 			router := gin.New()
-			require.NoError(t, registerAPI(router, slog.New(slog.NewTextHandler(io.Discard, nil)), handler))
+			require.NoError(t, registerAPI(router, slog.New(slog.NewTextHandler(io.Discard, nil)), handler, nil))
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", nil))
 			require.Equal(t, 500, response.Code)
+			require.JSONEq(t, `{"code":"internal_error","message":"Внутренняя ошибка сервера"}`, response.Body.String())
+		})
+	}
+}
+
+func TestInternalErrorResetsDatabaseOnlyOnPostgresShutdown(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		err    error
+		resets int
+	}{
+		{name: "shutdown", err: &pgconn.PgError{Code: "57P01"}, resets: 1},
+		{name: "wrapped shutdown", err: fmt.Errorf("save schedule: %w", &pgconn.PgError{Code: "57P01"}), resets: 1},
+		{name: "constraint violation", err: &pgconn.PgError{Code: "23505"}},
+		{name: "connection failure", err: &pgconn.PgError{Code: "08006"}},
+		{name: "other error", err: errors.New("private application details")},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			resets := 0
+			adapter := errorAdapter{
+				logger:        slog.New(slog.NewTextHandler(io.Discard, nil)),
+				resetDatabase: func() { resets++ },
+			}
+			response := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(response)
+			adapter.internalError(c, tt.err)
+			require.Equal(t, tt.resets, resets)
+			require.Equal(t, http.StatusInternalServerError, response.Code)
 			require.JSONEq(t, `{"code":"internal_error","message":"Внутренняя ошибка сервера"}`, response.Body.String())
 		})
 	}
