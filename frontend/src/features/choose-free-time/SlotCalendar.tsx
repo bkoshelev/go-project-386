@@ -1,8 +1,8 @@
 import { Button, NativeSelect, Radio, Stack, Text } from "@mantine/core";
-import { useCallback, useEffect, useState } from "react";
-import { getEventAvailability, getEventType } from "./api/generated";
-import type { EventAvailability } from "./api/generated";
-import { useRead } from "./shared/useRead";
+import { useMachine } from "@xstate/react";
+import { useEffect } from "react";
+import { localDate, windowDates } from "./dates";
+import { freeTimeMachine } from "./model";
 
 const dateLabel = new Intl.DateTimeFormat("ru-RU", { dateStyle: "full" });
 const timeLabel = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -20,51 +20,27 @@ export function SlotCalendar({
   eventTypeId: string;
   onMissing: () => void;
 }) {
-  const read = useCallback(
-    async (signal: AbortSignal) => {
-      const path = { eventTypeId };
-      try {
-        const [event, availability] = await Promise.all([
-          getEventType({ path, signal, throwOnError: true }),
-          getEventAvailability({ path, signal, cache: "no-store", throwOnError: true }),
-        ]);
-        return { event: event.data, availability: availability.data };
-      } catch (error) {
-        if (
-          error &&
-          typeof error === "object" &&
-          "code" in error &&
-          error.code === "event_type_not_found"
-        )
-          return null;
-        throw error;
-      }
-    },
-    [eventTypeId],
-  );
-  const { state, reload } = useRead(read);
+  const [state, send] = useMachine(freeTimeMachine, { input: { eventTypeId } });
   useEffect(() => {
-    if (state.status === "ready" && state.data === null) onMissing();
+    send({ type: "eventTypeChanged", eventTypeId });
+  }, [eventTypeId, send]);
+  useEffect(() => {
+    if (state.matches("missing")) onMissing();
   }, [state, onMissing]);
-  const [date, setDate] = useState("");
-  const [selected, setSelected] = useState("");
-  if (state.status === "loading")
-    return <Text component="output">Загрузка свободного времени…</Text>;
-  if (state.status === "error")
+  if (state.matches("loading")) return <Text component="output">Загрузка свободного времени…</Text>;
+  if (state.matches("failed"))
     return (
       <Stack align="flex-start">
         <Text role="alert">Не удалось загрузить свободное время</Text>
-        <Button variant="outline" onClick={reload}>
+        <Button variant="outline" onClick={() => send({ type: "refresh" })}>
           Повторить загрузку времени
         </Button>
       </Stack>
     );
-  if (state.data === null) return null;
-  const { event, availability } = state.data;
+  if (!state.matches("ready") || !state.context.data) return null;
+  const { event, availability } = state.context.data!;
   const dates = windowDates(availability);
-  const currentDate =
-    (dates.includes(date) ? date : "") ||
-    (availability.slots[0] ? localDate(new Date(availability.slots[0].startsAt)) : dates[0]);
+  const { date: currentDate, selected } = state.context;
   const slots = availability.slots.filter(
     (slot) => localDate(new Date(slot.startsAt)) === currentDate,
   );
@@ -87,8 +63,7 @@ export function SlotCalendar({
             label="Дата"
             value={currentDate}
             onChange={(event) => {
-              setDate(event.currentTarget.value);
-              setSelected("");
+              send({ type: "dateChanged", date: event.currentTarget.value });
             }}
             data={dates.map((value) => ({
               value,
@@ -98,7 +73,11 @@ export function SlotCalendar({
           {slots.length === 0 ? (
             <Text>На эту дату нет свободного времени</Text>
           ) : (
-            <Radio.Group label="Свободное время" value={selected} onChange={setSelected}>
+            <Radio.Group
+              label="Свободное время"
+              value={selected}
+              onChange={(startsAt) => send({ type: "slotSelected", startsAt })}
+            >
               <Stack gap="sm" mt="xs">
                 {slots.map((slot) => {
                   const start = new Date(slot.startsAt);
@@ -127,31 +106,9 @@ export function SlotCalendar({
         </Text>
       )}
       <Text c="dimmed">Выбор не резервирует время</Text>
-      <Button
-        variant="outline"
-        onClick={() => {
-          setSelected("");
-          reload();
-        }}
-      >
+      <Button variant="outline" onClick={() => send({ type: "refresh" })}>
         Обновить доступность
       </Button>
     </Stack>
   );
-}
-
-function localDate(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function windowDates(availability: EventAvailability) {
-  const date = new Date(availability.windowStartsAt);
-  date.setHours(0, 0, 0, 0);
-  const end = new Date(Date.parse(availability.windowEndsAt) - 1);
-  const dates: string[] = [];
-  while (localDate(date) <= localDate(end)) {
-    dates.push(localDate(date));
-    date.setDate(date.getDate() + 1);
-  }
-  return dates;
 }

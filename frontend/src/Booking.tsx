@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCalendarOwner } from "./api/generated";
 import { GuestEventCatalog } from "./features/browse-event-types";
 import { useRead } from "./shared/useRead";
-import { SlotCalendar } from "./SlotCalendar";
+import { SlotCalendar } from "./features/choose-free-time";
 
 const readOwner = async (signal: AbortSignal) =>
   (await getCalendarOwner({ signal, throwOnError: true })).data;

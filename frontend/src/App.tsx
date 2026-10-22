@@ -1,5 +1,5 @@
 import { Anchor, Button, Container, Divider, Group, Text, Title } from "@mantine/core";
-import { Availability } from "./Availability";
+import { Availability } from "./features/manage-weekly-availability";
 import { Booking } from "./Booking";
 import { ManageEventTypes } from "./features/manage-event-types";
 
