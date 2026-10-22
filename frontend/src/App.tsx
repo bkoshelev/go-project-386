@@ -1,11 +1,8 @@
-import { Anchor, Button, Container, Divider, Group, Stack, Text, Title } from "@mantine/core";
-import { useState } from "react";
+import { Anchor, Button, Container, Divider, Group, Text, Title } from "@mantine/core";
 import { Booking } from "./Booking";
-import { CreateEventType } from "./CreateEventType";
-import { EventCatalog } from "./EventCatalog";
+import { ManageEventTypes } from "./features/manage-event-types";
 
 export function App() {
-  const [revision, setRevision] = useState(0);
   const path = window.location.pathname;
   return (
     <>
@@ -31,11 +28,7 @@ export function App() {
 
       <Container component="main" size="md" px={{ base: "md", sm: "xl" }} py={{ base: 64, sm: 96 }}>
         {path === "/admin" ? (
-          <Stack gap="xl">
-            <Title order={2}>Типы событий</Title>
-            <EventCatalog revision={revision} />
-            <CreateEventType onCreated={() => setRevision((value) => value + 1)} />
-          </Stack>
+          <ManageEventTypes />
         ) : path.startsWith("/book") ? (
           <Booking />
         ) : (

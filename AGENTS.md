@@ -16,6 +16,20 @@
 - `api/`: контракт TypeSpec в `main.tsp` и инструменты генерации OpenAPI и Fetch-клиента Hey API. Зависимости устанавливаются отдельно через `pnpm --dir api install --frozen-lockfile`.
 - В `docs/adr/` фиксируются архитектурные решения, а в `specs/` описываются требования. В `.github/workflows/` находится конфигурация CI, а `scripts/setup-worktree.sh` подготавливает рабочие деревья Orca.
 
+## Архитектурные правила
+
+Разработку frontend и backend ведите в соответствии с правилами и принципами из
+`docs/architecture/`. Перед проектированием и изменением кода изучайте документы,
+относящиеся к задаче:
+
+- [Feature-Based Architecture](docs/architecture/feature-based-architecture.md) — организация кода по функциям продукта.
+- [Vertical Slice Architecture](docs/architecture/vertical-slice-architecture.md) — реализация сквозных сценариев.
+- [Event-Driven Architecture с FSM](docs/architecture/event-driven-architecture-fsm.md) — события, состояния и допустимые переходы.
+- [Workflow-based architecture](docs/architecture/workflow-based-architecture.md) — координация шагов и обработка результатов.
+
+Применяйте эти принципы с учётом описанных в документах границ применимости,
+требований задачи и принятых решений в `docs/adr/`.
+
 ## Команды сборки, тестирования и разработки
 
 Из корня репозитория (цели Makefile относятся только к серверной части):
@@ -50,7 +64,6 @@
 
 Используйте Conventional Commits в соответствии с историей репозитория: `feat(frontend): ...`, `fix(backend): ...` или `chore: ...`. Предпочитайте слияние с объединением коммитов (squash), а заголовок PR оформляйте по Conventional Commits. Описывайте изменения поведения и выполненные проверки; добавляйте ссылки на связанные задачи, а при изменениях интерфейса — снимки экрана. Release-please управляет общей версией проекта и журналами изменений; согласовывайте с командой изменения, нарушающие обратную совместимость.
 
-## Agent skills
 
 ### Issue tracker
 
