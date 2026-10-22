@@ -1,19 +1,25 @@
 import { Button, Paper, Radio, Stack, Text } from "@mantine/core";
 import { useState } from "react";
-import { readCatalog, useRead } from "./catalog";
+import { listEventTypes, type EventTypes } from "../api/generated";
+import { useRead, type ReadState } from "../shared/useRead";
 
-export function EventCatalog({
-  guest = false,
-  revision = 0,
-}: {
-  guest?: boolean;
-  revision?: number;
-}) {
-  return <Catalog key={revision} guest={guest} />;
+export const readCatalog = async (signal: AbortSignal) =>
+  (await listEventTypes({ signal, throwOnError: true })).data;
+
+export function GuestEventCatalog() {
+  const { state, reload } = useRead(readCatalog);
+  return <EventCatalog state={state} reload={reload} guest />;
 }
 
-function Catalog({ guest }: { guest: boolean }) {
-  const { state, reload } = useRead(readCatalog);
+export function EventCatalog({
+  state,
+  reload,
+  guest = false,
+}: {
+  state: ReadState<EventTypes>;
+  reload: () => void;
+  guest?: boolean;
+}) {
   const [selected, setSelected] = useState("");
   if (state.status === "loading") return <Text component="output">Загрузка типов событий…</Text>;
   if (state.status === "error")

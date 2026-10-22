@@ -1,7 +1,11 @@
 import { Button, Stack, Text, Title } from "@mantine/core";
 import { useEffect, useRef } from "react";
-import { readOwner, useRead } from "./catalog";
-import { EventCatalog } from "./EventCatalog";
+import { getCalendarOwner } from "./api/generated";
+import { GuestEventCatalog } from "./event-types/catalog";
+import { useRead } from "./shared/useRead";
+
+const readOwner = async (signal: AbortSignal) =>
+  (await getCalendarOwner({ signal, throwOnError: true })).data;
 
 export function Booking() {
   const { state, reload } = useRead(readOwner);
@@ -24,7 +28,7 @@ export function Booking() {
       <Title order={3} tabIndex={-1} ref={heading}>
         Шаг 1. Тип события
       </Title>
-      <EventCatalog guest />
+      <GuestEventCatalog />
     </Stack>
   );
 }
