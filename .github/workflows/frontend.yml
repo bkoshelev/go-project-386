@@ -77,8 +77,8 @@ jobs:
       - name: Verify Docker is available
         run: docker info
 
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify preinstalled Google Chrome
+        run: google-chrome --version
 
       - name: Run production smoke test
         run: pnpm test:smoke

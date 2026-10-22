@@ -13,6 +13,8 @@ export default defineConfig({
   outputDir: "../artifacts/container-smoke/browser",
   use: {
     ...devices["Desktop Chrome"],
+    // The browser runs on the GitHub host, outside the application container.
+    channel: process.env.GITHUB_ACTIONS === "true" ? "chrome" : undefined,
     baseURL: process.env.CONTAINER_BASE_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",

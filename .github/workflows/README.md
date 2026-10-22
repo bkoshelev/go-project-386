@@ -7,6 +7,8 @@ The hexlet-check.yml file is responsible for running these tests - do not delete
 ## Контейнерный smoke
 
 `container.yml` на push и pull request запускает `make test-container`: собирает
-единый образ, проверяет его с отдельной PostgreSQL и Chromium, удаляет
-изолированные ресурсы. При сбое маскированные логи и браузерная диагностика
+единый образ, проверяет его с отдельной PostgreSQL и предустановленным на runner
+Google Chrome, удаляет изолированные ресурсы. Браузер запускается на runner,
+вне контейнера приложения; локальный запуск использует Chromium из Playwright.
+При сбое маскированные логи и браузерная диагностика
 доступны в artifact `container-smoke`. Подробности: [инструкция запуска](../../docs/runbooks/production-environment.md).
