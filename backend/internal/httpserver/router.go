@@ -23,6 +23,8 @@ type Options struct {
 	Readiness func(context.Context) error
 	// Frontend contains the production assets; nil disables frontend serving.
 	Frontend fs.FS
+	// Now supplies the server clock; nil uses time.Now.
+	Now func() time.Time
 }
 
 // NewRouter creates the backend HTTP router with logging and panic recovery.
@@ -36,11 +38,14 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 		return nil, fmt.Errorf("disable trusted proxies: %w", err)
 	}
 
-	handler := catalogHandler{healthHandler: healthHandler{checkReady: options.Readiness}}
+	if options.Now == nil {
+		options.Now = time.Now
+	}
+	handler := applicationHandler{healthHandler: healthHandler{checkReady: options.Readiness}, now: options.Now}
 	if options.Database != nil {
 		handler.queries = db.New(options.Database)
 	}
-	if err := registerAPI(router, logger, handler); err != nil {
+	if err := registerAPI(router, logger, handler, options.Database); err != nil {
 		return nil, err
 	}
 	if options.Frontend != nil {
@@ -50,6 +55,12 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 	}
 
 	return router, nil
+}
+
+type applicationHandler struct {
+	healthHandler
+	queries *db.Queries
+	now     func() time.Time
 }
 
 type healthHandler struct{ checkReady func(context.Context) error }
@@ -70,12 +81,15 @@ func (h healthHandler) GetReadiness(ctx context.Context, _ api.GetReadinessReque
 	return api.GetReadiness200JSONResponse{Status: api.Ok}, nil
 }
 
-func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface) error {
+func registerAPI(router gin.IRouter, logger *slog.Logger, handler api.StrictServerInterface, database db.DBTX) error {
 	validator, err := newRequestValidator()
 	if err != nil {
 		return err
 	}
 	adapter := errorAdapter{logger: logger}
+	if pool, ok := database.(interface{ Reset() }); ok {
+		adapter.resetDatabase = pool.Reset
+	}
 	strict := api.NewStrictHandlerWithOptions(handler, nil, api.StrictGinServerOptions{
 		RequestErrorHandlerFunc:  adapter.requestError,
 		HandlerErrorFunc:         adapter.internalError,

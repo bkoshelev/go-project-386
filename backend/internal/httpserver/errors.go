@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
 )
@@ -21,7 +22,10 @@ func writeInternalError(c *gin.Context) {
 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"code": "internal_error", "message": "Внутренняя ошибка сервера"})
 }
 
-type errorAdapter struct{ logger *slog.Logger }
+type errorAdapter struct {
+	logger        *slog.Logger
+	resetDatabase func()
+}
 
 func (a errorAdapter) pathError(c *gin.Context, _ error, _ int) { writeBadRequest(c) }
 
@@ -41,6 +45,11 @@ func (a errorAdapter) requestError(c *gin.Context, err error) {
 
 func (a errorAdapter) internalError(c *gin.Context, err error) {
 	a.logger.Error("API handler failed", slog.Any("error", err))
+	var pgErr *pgconn.PgError
+	if a.resetDatabase != nil && errors.As(err, &pgErr) && pgErr.Code == "57P01" {
+		// PostgreSQL shutdown can invalidate the other idle connections as well.
+		a.resetDatabase()
+	}
 	// A failed socket write may already have committed headers. Encoding failures
 	// are buffered by the generator and can still be replaced with a JSON error.
 	if c.Writer.Written() {

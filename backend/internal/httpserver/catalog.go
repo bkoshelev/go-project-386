@@ -12,12 +12,7 @@ import (
 	"github.com/bkoshelev/go-project-386/backend/internal/database/db"
 )
 
-type catalogHandler struct {
-	healthHandler
-	queries *db.Queries
-}
-
-func (h catalogHandler) GetCalendarOwner(ctx context.Context, _ api.GetCalendarOwnerRequestObject) (api.GetCalendarOwnerResponseObject, error) {
+func (h applicationHandler) GetCalendarOwner(ctx context.Context, _ api.GetCalendarOwnerRequestObject) (api.GetCalendarOwnerResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -28,7 +23,7 @@ func (h catalogHandler) GetCalendarOwner(ctx context.Context, _ api.GetCalendarO
 	return api.GetCalendarOwner200JSONResponse{FullName: name}, nil
 }
 
-func (h catalogHandler) ListEventTypes(ctx context.Context, _ api.ListEventTypesRequestObject) (api.ListEventTypesResponseObject, error) {
+func (h applicationHandler) ListEventTypes(ctx context.Context, _ api.ListEventTypesRequestObject) (api.ListEventTypesResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -58,7 +53,7 @@ func eventTypeResponse(row db.EventType) (api.EventType, error) {
 	return item, nil
 }
 
-func (h catalogHandler) GetEventType(ctx context.Context, request api.GetEventTypeRequestObject) (api.GetEventTypeResponseObject, error) {
+func (h applicationHandler) GetEventType(ctx context.Context, request api.GetEventTypeRequestObject) (api.GetEventTypeResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}
@@ -76,7 +71,7 @@ func (h catalogHandler) GetEventType(ctx context.Context, request api.GetEventTy
 	return api.GetEventType200JSONResponse(item), err
 }
 
-func (h catalogHandler) CreateEventType(ctx context.Context, request api.CreateEventTypeRequestObject) (api.CreateEventTypeResponseObject, error) {
+func (h applicationHandler) CreateEventType(ctx context.Context, request api.CreateEventTypeRequestObject) (api.CreateEventTypeResponseObject, error) {
 	if h.queries == nil {
 		return nil, errors.New("database is not configured")
 	}

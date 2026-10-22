@@ -81,6 +81,9 @@ func (v *requestValidator) middleware() gin.HandlerFunc {
 			writeInternalError(c)
 			return
 		}
+		if route.Operation.OperationID == "GetEventAvailability" {
+			c.Header("Cache-Control", "no-store")
+		}
 		parameters := append(append(openapi3.Parameters{}, route.PathItem.Parameters...), route.Operation.Parameters...)
 		for _, ref := range parameters {
 			parameter := ref.Value
