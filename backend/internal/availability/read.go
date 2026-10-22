@@ -44,7 +44,7 @@ func Load(ctx context.Context, queries *db.Queries, eventID uuid.UUID, now time.
 		return Snapshot{}, fmt.Errorf("read availability schedule: %w", err)
 	}
 	if !schedule.TimeZone.Valid {
-		return newSnapshot(scheduling.Week{}, nil, time.Duration(event.DurationMinutes)*time.Minute, now), nil
+		return newSnapshot(scheduling.Week{}, nil, time.Duration(event.DurationMinutes)*time.Minute, now, nil), nil
 	}
 	location, err := time.LoadLocation(schedule.TimeZone.String)
 	if err != nil {
@@ -54,7 +54,11 @@ func Load(ctx context.Context, queries *db.Queries, eventID uuid.UUID, now time.
 	if err := json.Unmarshal(schedule.WeeklyAvailability, &week); err != nil {
 		return Snapshot{}, fmt.Errorf("decode availability schedule: %w", err)
 	}
-	snapshot := newSnapshot(week, location, time.Duration(event.DurationMinutes)*time.Minute, now)
+	var dates map[string]scheduling.Date
+	if err := json.Unmarshal(schedule.DateAvailability, &dates); err != nil {
+		return Snapshot{}, fmt.Errorf("decode date availability: %w", err)
+	}
+	snapshot := newSnapshot(week, location, time.Duration(event.DurationMinutes)*time.Minute, now, dates)
 	snapshot.EventName = event.Name
 	snapshot.Pause = time.Duration(schedule.MeetingPauseMinutes) * time.Minute
 	busy, err := queries.ListBusyBookings(ctx, db.ListBusyBookingsParams{EndsAt: pgtype.Timestamptz{Time: snapshot.Window.WindowStartsAt.Add(-snapshot.Pause), Valid: true}, StartsAt: pgtype.Timestamptz{Time: snapshot.Window.WindowEndsAt.Add(snapshot.Pause), Valid: true}})

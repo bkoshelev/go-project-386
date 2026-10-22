@@ -12,19 +12,25 @@ import (
 )
 
 const getAvailabilitySchedule = `-- name: GetAvailabilitySchedule :one
-SELECT time_zone, weekly_availability, meeting_pause_minutes FROM scheduling_settings WHERE singleton = TRUE
+SELECT time_zone, weekly_availability, meeting_pause_minutes, date_availability FROM scheduling_settings WHERE singleton = TRUE
 `
 
 type GetAvailabilityScheduleRow struct {
 	TimeZone            pgtype.Text
 	WeeklyAvailability  []byte
 	MeetingPauseMinutes int32
+	DateAvailability    []byte
 }
 
 func (q *Queries) GetAvailabilitySchedule(ctx context.Context) (GetAvailabilityScheduleRow, error) {
 	row := q.db.QueryRow(ctx, getAvailabilitySchedule)
 	var i GetAvailabilityScheduleRow
-	err := row.Scan(&i.TimeZone, &i.WeeklyAvailability, &i.MeetingPauseMinutes)
+	err := row.Scan(
+		&i.TimeZone,
+		&i.WeeklyAvailability,
+		&i.MeetingPauseMinutes,
+		&i.DateAvailability,
+	)
 	return i, err
 }
 

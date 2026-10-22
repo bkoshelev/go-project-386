@@ -2,6 +2,7 @@ import { Button, Checkbox, Group, Stack, Text, TextInput, Title } from "@mantine
 import { useMachine } from "@xstate/react";
 import { useEffect, useRef } from "react";
 import type { Weekday } from "../../api/generated";
+import { DateAvailability } from "../manage-date-availability";
 import { weeklyAvailabilityMachine } from "./model";
 
 const dayNames: Record<Weekday, string> = {
@@ -165,6 +166,7 @@ export function Availability() {
           </form>
         </Stack>
       )}
+      {timeZone && <DateAvailability timeZone={timeZone} />}
     </Stack>
   );
 }

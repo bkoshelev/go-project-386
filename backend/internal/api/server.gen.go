@@ -12,10 +12,17 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /api/admin/availability/dates/{date})
+	GetDateAvailability(c *gin.Context, date openapi_types.Date)
+
+	// (PUT /api/admin/availability/dates/{date})
+	UpdateDateAvailability(c *gin.Context, date openapi_types.Date)
 
 	// (GET /api/admin/availability/weekly)
 	GetWeeklyAvailability(c *gin.Context)
@@ -68,6 +75,56 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(c *gin.Context)
+
+// GetDateAvailability operation middleware
+func (siw *ServerInterfaceWrapper) GetDateAvailability(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "date" -------------
+	var date openapi_types.Date
+
+	err = runtime.BindStyledParameterWithOptions("simple", "date", c.Param("date"), &date, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "date", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter date: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDateAvailability(c, date)
+}
+
+// UpdateDateAvailability operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDateAvailability(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "date" -------------
+	var date openapi_types.Date
+
+	err = runtime.BindStyledParameterWithOptions("simple", "date", c.Param("date"), &date, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "date", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter date: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateDateAvailability(c, date)
+}
 
 // GetWeeklyAvailability operation middleware
 func (siw *ServerInterfaceWrapper) GetWeeklyAvailability(c *gin.Context) {
@@ -302,6 +359,8 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/api/admin/availability/dates/:date", wrapper.GetDateAvailability)
+	router.PUT(options.BaseURL+"/api/admin/availability/dates/:date", wrapper.UpdateDateAvailability)
 	router.GET(options.BaseURL+"/api/admin/availability/weekly", wrapper.GetWeeklyAvailability)
 	router.PUT(options.BaseURL+"/api/admin/availability/weekly", wrapper.UpdateWeeklyAvailability)
 	router.GET(options.BaseURL+"/api/admin/bookings", wrapper.ListOwnerBookings)
@@ -316,6 +375,201 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 	router.GET(options.BaseURL+"/api/owner", wrapper.GetCalendarOwner)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadiness)
+}
+
+type GetDateAvailabilityRequestObject struct {
+	Date openapi_types.Date `json:"date"`
+}
+
+type GetDateAvailabilityResponseObject interface {
+	VisitGetDateAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type GetDateAvailability200JSONResponse DateAvailability
+
+func (response GetDateAvailability200JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability400JSONResponse struct {
+	Code    GetDateAvailability400JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability400JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability409JSONResponse struct {
+	Code    GetDateAvailability409JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability409JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability500JSONResponse struct {
+	Code    GetDateAvailability500JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability500JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability503JSONResponse struct {
+	Code    GetDateAvailability503JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability503JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailabilityRequestObject struct {
+	Date openapi_types.Date `json:"date"`
+	Body *UpdateDateAvailabilityJSONRequestBody
+}
+
+type UpdateDateAvailabilityResponseObject interface {
+	VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type UpdateDateAvailability200JSONResponse DateAvailability
+
+func (response UpdateDateAvailability200JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability400JSONResponse struct {
+	Code    UpdateDateAvailability400JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability400JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability409JSONResponse struct {
+	Code    UpdateDateAvailability409JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability409JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability422JSONResponse ValidationError
+
+func (response UpdateDateAvailability422JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability500JSONResponse struct {
+	Code    UpdateDateAvailability500JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability500JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability503JSONResponse struct {
+	Code    UpdateDateAvailability503JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability503JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type GetWeeklyAvailabilityRequestObject struct {
@@ -1318,6 +1572,12 @@ func (response GetReadiness503JSONResponse) VisitGetReadinessResponse(w http.Res
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /api/admin/availability/dates/{date})
+	GetDateAvailability(ctx context.Context, request GetDateAvailabilityRequestObject) (GetDateAvailabilityResponseObject, error)
+
+	// (PUT /api/admin/availability/dates/{date})
+	UpdateDateAvailability(ctx context.Context, request UpdateDateAvailabilityRequestObject) (UpdateDateAvailabilityResponseObject, error)
+
 	// (GET /api/admin/availability/weekly)
 	GetWeeklyAvailability(ctx context.Context, request GetWeeklyAvailabilityRequestObject) (GetWeeklyAvailabilityResponseObject, error)
 
@@ -1416,6 +1676,65 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictGinServerOptions
+}
+
+// GetDateAvailability operation middleware
+func (sh *strictHandler) GetDateAvailability(ctx *gin.Context, date openapi_types.Date) {
+	var request GetDateAvailabilityRequestObject
+
+	request.Date = date
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDateAvailability(ctx, request.(GetDateAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDateAvailability")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetDateAvailabilityResponseObject); ok {
+		if err := validResponse.VisitGetDateAvailabilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDateAvailability operation middleware
+func (sh *strictHandler) UpdateDateAvailability(ctx *gin.Context, date openapi_types.Date) {
+	var request UpdateDateAvailabilityRequestObject
+
+	request.Date = date
+
+	var body UpdateDateAvailabilityJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDateAvailability(ctx, request.(UpdateDateAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDateAvailability")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateDateAvailabilityResponseObject); ok {
+		if err := validResponse.VisitUpdateDateAvailabilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // GetWeeklyAvailability operation middleware
