@@ -12,9 +12,13 @@ type Draft = {
 type CreationInput = { onCreated: () => void };
 type CreationContext = CreationInput & { draft: Draft; errors: FieldErrors };
 
+export function getDurationLimit(unit: Draft["unit"]) {
+  return unit === "hours" ? 23 : 60;
+}
+
 function validate(draft: Draft): FieldErrors {
   const errors: FieldErrors = {};
-  const limit = draft.unit === "hours" ? 23 : 60;
+  const limit = getDurationLimit(draft.unit);
   const duration = Number(draft.duration);
   if (!draft.name.trim()) errors.name = "Введите название";
   if (!Number.isInteger(duration) || duration < 1 || duration > limit) {

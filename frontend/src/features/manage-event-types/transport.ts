@@ -9,6 +9,7 @@ export type CreationResult =
 
 function confirmsCreation(data: unknown, request: CreateEventTypeRequest) {
   // Generated TypeScript types do not validate the response received over the network.
+  // The server's name normalization is authoritative and can differ from String.trim().
   return (
     typeof data === "object" &&
     data !== null &&
@@ -16,7 +17,8 @@ function confirmsCreation(data: unknown, request: CreateEventTypeRequest) {
     typeof data.id === "string" &&
     /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/i.test(data.id) &&
     "name" in data &&
-    data.name === request.name &&
+    typeof data.name === "string" &&
+    data.name.length > 0 &&
     "durationMinutes" in data &&
     data.durationMinutes === request.durationMinutes &&
     ("description" in data ? data.description : undefined) === request.description

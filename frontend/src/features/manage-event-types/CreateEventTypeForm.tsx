@@ -1,7 +1,7 @@
 import { Button, NativeSelect, Stack, Text, Textarea, TextInput, Title } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import { useMachine } from "@xstate/react";
-import { creationMachine } from "./creation";
+import { creationMachine, getDurationLimit } from "./creation";
 
 export function CreateEventTypeForm({ onCreated }: { onCreated: () => void }) {
   const [state, send] = useMachine(creationMachine, { input: { onCreated } });
@@ -19,7 +19,7 @@ export function CreateEventTypeForm({ onCreated }: { onCreated: () => void }) {
   const nameRef = useRef<HTMLInputElement>(null);
   const durationRef = useRef<HTMLInputElement>(null);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-  const durationLimit = unit === "hours" ? 23 : 60;
+  const durationLimit = getDurationLimit(unit);
 
   useEffect(() => {
     if (saving) return;

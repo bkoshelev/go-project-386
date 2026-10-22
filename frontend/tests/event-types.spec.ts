@@ -47,6 +47,28 @@ test("пустой гостевой каталог отличается от з�
   await expect(page.getByText("Пока нет доступных типов встреч")).toBeVisible();
 });
 
+test("серверная нормализация Unicode-пробелов не отменяет подтверждение создания", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/admin");
+  for (const [input, expected, count] of [
+    ["\u0085Встреча\u0085", "Встреча", 1],
+    // Go retains U+FEFF, whereas String.trim() removes it from the server's response.
+    ["\u0085\uFEFF\u0085", "\uFEFF", 2],
+  ] as const) {
+    await page.getByRole("textbox", { name: "Название" }).fill(input);
+    await page.getByRole("spinbutton", { name: "Длительность" }).fill("30");
+    await page.getByRole("button", { name: "Создать тип события" }).click();
+    await expect(page.getByText("Тип события создан", { exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "Название" })).toBeEmpty();
+    const catalog = await (await request.get("/api/event-types")).json();
+    expect(catalog.items).toHaveLength(count);
+    expect(catalog.items[count - 1].name).toBe(expected);
+    await expect(page.getByRole("listitem")).toHaveCount(count);
+  }
+});
+
 test("ошибки формы сохраняют ввод, фокусируют поле и не отправляют запрос", async ({ page }) => {
   let writes = 0;
   page.on("request", (request) => {
