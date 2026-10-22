@@ -1,7 +1,7 @@
 import { Button, Stack, Text, Title } from "@mantine/core";
 import { useEffect, useRef } from "react";
 import { getCalendarOwner } from "./api/generated";
-import { GuestEventCatalog } from "./event-types/catalog";
+import { GuestEventCatalog } from "./features/browse-event-types";
 import { useRead } from "./shared/useRead";
 
 const readOwner = async (signal: AbortSignal) =>

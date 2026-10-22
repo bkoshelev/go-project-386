@@ -1,7 +1,7 @@
 import { Button, Paper, Radio, Stack, Text } from "@mantine/core";
 import { useState } from "react";
-import { listEventTypes, type EventTypes } from "../api/generated";
-import { useRead, type ReadState } from "../shared/useRead";
+import { listEventTypes, type EventTypes } from "../../api/generated";
+import { useRead, type ReadState } from "../../shared/useRead";
 
 export const readCatalog = async (signal: AbortSignal) =>
   (await listEventTypes({ signal, throwOnError: true })).data;

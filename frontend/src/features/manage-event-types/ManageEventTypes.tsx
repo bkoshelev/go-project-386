@@ -1,6 +1,6 @@
 import { Stack, Title } from "@mantine/core";
-import { EventCatalog, readCatalog } from "../../event-types/catalog";
 import { useRead } from "../../shared/useRead";
+import { EventCatalog, readCatalog } from "../browse-event-types";
 import { CreateEventTypeForm } from "./CreateEventTypeForm";
 
 export function ManageEventTypes() {
