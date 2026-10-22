@@ -35,7 +35,7 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 
 	applied, err := provider.Up(ctx)
 	require.NoError(t, err)
-	require.Len(t, applied, 3)
+	require.Len(t, applied, 4)
 	assert.EqualValues(t, 1, applied[0].Source.Version)
 	assert.EqualValues(t, 2, applied[1].Source.Version)
 	var relation string
@@ -48,17 +48,18 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 
 	reverted, err := provider.Down(ctx)
 	require.NoError(t, err)
-	assert.EqualValues(t, 3, reverted.Source.Version)
+	assert.EqualValues(t, 4, reverted.Source.Version)
 	var missing bool
-	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('scheduling_settings') IS NULL").Scan(&missing))
-	assert.True(t, missing, "down must remove the scheduling settings table")
+	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT to_regclass('bookings') IS NULL").Scan(&missing))
+	assert.True(t, missing, "down must remove the bookings table")
 
 	applied, err = provider.Up(ctx)
 	require.NoError(t, err)
 	require.Len(t, applied, 1)
 	status, err := provider.Status(ctx)
 	require.NoError(t, err)
-	require.Len(t, status, 3)
+	require.Len(t, status, 4)
+	assert.Equal(t, goose.StateApplied, status[3].State)
 	assert.Equal(t, goose.StateApplied, status[2].State)
 	assert.Equal(t, goose.StateApplied, status[1].State)
 	assert.Equal(t, goose.StateApplied, status[0].State)
