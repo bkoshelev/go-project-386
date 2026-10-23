@@ -11,10 +11,10 @@
 
 Проект календарного бронирования состоит из двух независимых приложений:
 
-- `backend/`: модуль на Go/Gin; точка входа — `cmd/server/`, а `internal/config/`, `internal/httpserver/` и `internal/server/` отвечают за конфигурацию, маршрутизацию и жизненный цикл. Тесты расположены рядом с исходными файлами.
+- `backend/`: самостоятельный модуль Go/Gin; точка входа — `cmd/server/`, тесты рядом с исходными файлами.
 - `frontend/`: React, TypeScript, Vite и Mantine; код приложения и CSS находятся в `src/`, а тесты Playwright — в `tests/`.
-- `api/`: контракт TypeSpec в `main.tsp` и инструменты генерации OpenAPI и Fetch-клиента Hey API. Зависимости устанавливаются отдельно через `pnpm --dir api install --frozen-lockfile`.
-- В `docs/adr/` фиксируются архитектурные решения, а в `specs/` описываются требования. В `.github/workflows/` находится конфигурация CI, а `scripts/setup-worktree.sh` подготавливает рабочие деревья Orca.
+- `api/`: отдельный пакет с контрактом TypeSpec в `main.tsp` и генерацией OpenAPI и Fetch-клиента Hey API.
+- Архитектурные решения — в `docs/adr/`, требования — в `specs/`, CI — в `.github/workflows/`.
 
 ## Архитектурные правила
 
@@ -30,31 +30,26 @@
 Применяйте эти принципы с учётом описанных в документах границ применимости,
 требований задачи и принятых решений в `docs/adr/`.
 
-## Команды сборки, тестирования и разработки
+## Запуск и чтение контекста
 
-Из корня репозитория (цели Makefile относятся только к серверной части):
+Основной вход для подготовки окружения, запуска и проверок — [корневой README](README.md#установка).
+Определения команд находятся в [Makefile](Makefile) (только backend) и
+[frontend/package.json](frontend/package.json); подробности браузерного окружения — в
+[frontend/README.md](frontend/README.md#браузерная-проверка).
 
-- `make tools`: установить закреплённые версии golangci-lint и govulncheck в `backend/bin/tools/`.
-- `make check`: запустить линтер, vet, тесты с обнаружением гонок данных, сборку и сканирование уязвимостей.
-- `make fmt`: применить gofmt и goimports; проверить получившиеся изменения.
-
-Для локальной разработки в каталоге `backend/` выполните `go mod download`, затем `GOTOOLCHAIN=local go run ./cmd/server`.
-
-Из каталога `frontend/`:
-
-- `pnpm api:generate`: скомпилировать TypeSpec и сгенерировать клиент в `src/api/generated/`; автоматически выполняется перед `dev`, `build` и `check`. Сгенерированные файлы исключены из Git.
-- `pnpm install --frozen-lockfile`: воспроизводимо установить зависимости.
-- `pnpm dev`: запустить сервер разработки Vite.
-- `pnpm check`: запустить Oxlint, Stylelint и проверку форматирования.
-- `pnpm build`: проверить типы и собрать ресурсы для рабочей среды.
-- `pnpm exec playwright install chromium`: подготовить браузер для тестов.
-- `pnpm test:smoke`: собрать и протестировать интерфейс рабочей сборки в Chromium на порту 4173.
+При чтении задач, больших спецификаций и ответов GitHub следуйте
+[правилам адресного чтения](docs/agents/context-reading.md): получайте законченные разделы
+без усечения, сохраняя полноту обязательных источников.
 
 ## Стиль кода и правила именования
 
 Используйте стандартное форматирование Go с табуляцией, имена пакетов в нижнем регистре и комментарии для экспортируемых идентификаторов. Следуйте принятому шаблону именования тестов `TestXxx`.
 
-Для форматирования клиентской части используется Oxfmt: отступы в два пробела, двойные кавычки, точки с запятой, завершающие запятые и строки длиной до 100 символов. Именуйте компоненты React в PascalCase, например `App.tsx`. Сохраняйте порядок импортов CSS. Ограничивайте область подавления предупреждений линтера и объясняйте каждое исключение.
+Для форматирования клиентской части используется Oxfmt с настройками из
+[frontend/.oxfmtrc.jsonc](frontend/.oxfmtrc.jsonc). Именуйте компоненты React в PascalCase,
+например `App.tsx`. Сохраняйте порядок импортов CSS: он влияет на каскад Mantine и локальных
+стилей. Подавляйте только конкретное правило линтера на минимальном участке и объясняйте
+каждое исключение комментарием с причиной.
 
 ## Правила тестирования
 
@@ -67,12 +62,12 @@
 
 ### Issue tracker
 
-Задачи и спецификации хранятся в GitHub Issues репозитория `bkoshelev/go-project-386`. См. `docs/agents/issue-tracker.md`.
+Задачи и спецификации хранятся в GitHub Issues репозитория `bkoshelev/go-project-386`. См. [issue tracker](docs/agents/issue-tracker.md).
 
 ### Triage labels
 
-Используются стандартные метки: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. См. `docs/agents/triage-labels.md`.
+Используются стандартные метки: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. См. [triage labels](docs/agents/triage-labels.md).
 
 ### Domain docs
 
-Один контекст (single-context): `GLOSSARY.md` в корне и общие ADR в `docs/adr/`. См. `docs/agents/domain.md`.
+Один контекст (single-context): `GLOSSARY.md` в корне и общие ADR в `docs/adr/`. См. [domain docs](docs/agents/domain.md).

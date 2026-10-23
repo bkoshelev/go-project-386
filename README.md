@@ -8,6 +8,10 @@
 Учебный проект Хекслета: https://ru.hexlet.io/programs/go
 Как это должно работать: https://files.hexlet.app/a/2ipc5m
 
+Этот README — основной вход для [подготовки окружения](#установка),
+[запуска и проверок](#использование). Подробности браузерного окружения принадлежат
+[frontend/README.md](frontend/README.md#браузерная-проверка).
+
 ## Стек
 
 - Go и Gin
@@ -47,8 +51,9 @@ ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
 
 Setup разрешает конфигурации `.envrc` и `mise.toml` текущего worktree,
 устанавливает нужные версии инструментов, зависимости и Chromium.
-Корневой `mise.toml` читает версию Go из `backend/go.mod`, Node.js — из
-`frontend/.nvmrc`, pnpm — из `frontend/package.json`. Makefile и CI используют
+Корневой [mise.toml](mise.toml) читает версию Go из [backend/go.mod](backend/go.mod),
+Node.js — из [frontend/.nvmrc](frontend/.nvmrc), pnpm — из поля `packageManager`
+в [frontend/package.json](frontend/package.json). Makefile и CI используют
 те же источники версий. Backend-инструменты по-прежнему устанавливаются
 через `make tools` в `backend/bin/tools/`.
 
@@ -58,7 +63,7 @@ Setup разрешает конфигурации `.envrc` и `mise.toml` тек
 `HTTP_ADDR=127.0.0.1:8081` задаёт другой порт backend. `DATABASE_URL` обязателен
 для запуска backend и нужен для явных команд миграций; временная БД
 интеграционных тестов его не использует.
-Env-файлы не копируются между worktree, порты выбираются вручную.
+Env-файлы не копируются между worktree; порты локального dev-запуска выбираются вручную.
 
 Для ручных команд используйте явное окружение, например из корня:
 
@@ -83,9 +88,8 @@ Mise используется через CLI для выбора инструм�
 
 ### Фронтенд
 
-Для фронтенда нужны Node.js 24.21.0 и pnpm 12.4.2. Версия Node.js записана в
-`frontend/.nvmrc`, а версия pnpm — в поле `packageManager` файла
-`frontend/package.json`.
+Версии Node.js и pnpm выбирайте по источникам, указанным в
+[настройке окружения](#локальное-окружение-mise-и-direnv).
 
 После общего setup зависимости и Chromium уже установлены. Для отдельной
 подготовки только фронтенда можно использовать существующее окружение nvm:
@@ -95,7 +99,7 @@ cd frontend
 nvm install
 nvm use
 corepack enable
-corepack prepare pnpm@12.4.2 --activate
+corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
 pnpm --dir ../api install --frozen-lockfile
 pnpm install --frozen-lockfile
 pnpm exec playwright install chromium
@@ -232,7 +236,7 @@ make api-generate
 
 ### Бэкенд
 
-Для бэкенда нужен именно Go 1.26.10. Версия закреплена в `backend/go.mod` и
+Для бэкенда нужна точная версия Go из [backend/go.mod](backend/go.mod); она
 используется локальными Go-командами и GitHub Actions. Автоматическое переключение
 на другой toolchain отключено в Makefile и backend CI, поэтому нужную версию Go необходимо
 установить и выбрать заранее.
@@ -248,11 +252,11 @@ make tools
 Если нужный Go установлен отдельно, его можно указать явно для любой цели:
 
 ```bash
-make GO=/path/to/go1.26.10/bin/go check
+make GO=/path/to/go/bin/go check
 ```
 
-Команда устанавливает golangci-lint 2.13.2, govulncheck 1.8.0 и sqlc 1.31.1 только в
-`backend/bin/tools/`. Она проверяет версию Go и SHA-256 официального архива
+Команда устанавливает golangci-lint, govulncheck и sqlc версий из [Makefile](Makefile)
+только в `backend/bin/tools/`. Она проверяет версию Go и SHA-256 официального архива
 golangci-lint, не использует одноимённые программы из `PATH` и не изменяет
 системную установку. Версии обновляются только явным изменением Makefile с
 последующей проверкой совместимости.
@@ -317,11 +321,21 @@ ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
 
 <!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
 
+После [подготовки окружения](#установка) запустите PostgreSQL и backend по
+[инструкции ниже](#бэкенд-1), затем frontend. Команды предполагают выбранные
+инструменты и переменные; для ручного запуска через mise/direnv используйте
+[явное окружение](#локальное-окружение-mise-и-direnv).
+
+### Запуск и проверки frontend
+
 Все команды фронтенда выполняются из папки `frontend/`:
 
 ```bash
 # Сервер разработки
 pnpm dev
+
+# Линтеры, форматирование и проверка контракта
+pnpm check
 
 # Проверка TypeScript и production-сборка
 pnpm build
@@ -330,11 +344,27 @@ pnpm build
 pnpm test:smoke
 ```
 
-Smoke-тест сам собирает и запускает настоящий backend с production-ресурсами,
-создаёт отдельную PostgreSQL и очищает окружение после завершения. Нужны Go
-из `backend/go.mod` и доступный Docker; постоянная БД не используется.
-Для разработки запустите backend на `127.0.0.1:8080`; `pnpm dev` проксирует к нему
-API. Подробнее — [в инструкции frontend](frontend/README.md).
+Для разработки `pnpm dev` проксирует API к backend согласно
+[frontend/vite.config.ts](frontend/vite.config.ts).
+Интеграционный smoke выбирает свободные порты через fixtures; фиксированный порт
+для него не требуется. Требования и жизненный цикл окружения описаны в
+[инструкции браузерной проверки](frontend/README.md#браузерная-проверка).
+
+Дополнительные команды качества определены в [frontend/package.json](frontend/package.json):
+
+| Команда             | Назначение                                                |
+| ------------------- | --------------------------------------------------------- |
+| `pnpm lint:code`    | Проверить JS, TS, JSX и TSX с анализом типов              |
+| `pnpm lint:css`     | Проверить обычные CSS-файлы                               |
+| `pnpm lint`         | Последовательно выполнить обе lint-проверки               |
+| `pnpm lint:fix`     | Применить безопасные автоисправления Oxlint и Stylelint   |
+| `pnpm format`       | Отформатировать поддерживаемые frontend-файлы через Oxfmt |
+| `pnpm format:check` | Проверить форматирование без изменения файлов             |
+
+Исправления запускаются только явно; lint и CI исходники не изменяют.
+Настройки форматирования принадлежат [Oxfmt config](frontend/.oxfmtrc.jsonc).
+Ограничения статических проверок и правила подавлений — в
+[инструкции frontend](frontend/README.md#команды-качества).
 
 ### Бэкенд
 
@@ -371,7 +401,7 @@ make check
 Обычные Go-команды остаются доступны и выполняются из папки `backend/`:
 
 ```bash
-# Выбрать заранее установленный Go 1.26.10 и запретить автоматическую смену версии
+# Выбрать заранее установленный Go из backend/go.mod и запретить автоматическую смену версии
 export GOTOOLCHAIN=local
 go version
 
