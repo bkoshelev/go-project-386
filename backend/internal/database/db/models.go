@@ -39,4 +39,5 @@ type SchedulingSetting struct {
 	TimeZone            pgtype.Text
 	MeetingPauseMinutes int32
 	WeeklyAvailability  []byte
+	DateAvailability    []byte
 }

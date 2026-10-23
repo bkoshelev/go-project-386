@@ -19,8 +19,8 @@ type Result struct {
 
 // Calculate suggests future quarter-hour starts fitting entirely in continuous
 // working time and the fourteen-date UTC window. A nil location means uninitialized.
-func Calculate(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time) Result {
-	return newSnapshot(week, location, duration, now).Suggestions()
+func Calculate(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time, dates map[string]scheduling.Date) Result {
+	return newSnapshot(week, location, duration, now, dates).Suggestions()
 }
 
 // Reason identifies the first unmet availability rule, in contract priority order.
@@ -45,12 +45,12 @@ type Snapshot struct {
 	EventName       string
 }
 
-func newSnapshot(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time) Snapshot {
+func newSnapshot(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time, dates map[string]scheduling.Date) Snapshot {
 	now = now.UTC()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	s := Snapshot{Window: Result{GeneratedAt: now, WindowStartsAt: start, WindowEndsAt: start.AddDate(0, 0, 14), Slots: []Slot{}}, Duration: duration, Initialized: location != nil}
 	if location != nil {
-		s.Working = weeklyWorkingRanges(week, location, s.Window.WindowStartsAt, s.Window.WindowEndsAt)
+		s.Working = workingRanges(week, location, s.Window.WindowStartsAt, s.Window.WindowEndsAt, dates)
 	}
 	return s
 }
@@ -100,7 +100,7 @@ func (s Snapshot) Suggestions() Result {
 }
 
 // Expand each affected owner-local date, then merge touching intervals, including midnight.
-func weeklyWorkingRanges(week scheduling.Week, location *time.Location, start, end time.Time) []Slot {
+func workingRanges(week scheduling.Week, location *time.Location, start, end time.Time, dates map[string]scheduling.Date) []Slot {
 	weekdays := []scheduling.Weekday{scheduling.Sunday, scheduling.Monday, scheduling.Tuesday, scheduling.Wednesday, scheduling.Thursday, scheduling.Friday, scheduling.Saturday}
 	localStart := start.In(location)
 	day := time.Date(localStart.Year(), localStart.Month(), localStart.Day(), 0, 0, 0, 0, location)
@@ -110,7 +110,15 @@ func weeklyWorkingRanges(week scheduling.Week, location *time.Location, start, e
 			if settings.IsBlocked || settings.Weekday != weekdays[day.Weekday()] {
 				continue
 			}
-			for _, interval := range settings.Intervals {
+			date := dates[day.Format(time.DateOnly)]
+			if date.IsBlocked {
+				continue
+			}
+			intervals := settings.Intervals
+			if date.Intervals != nil {
+				intervals = *date.Intervals
+			}
+			for _, interval := range intervals {
 				ranges = append(ranges, Slot{StartsAt: localClock(day, interval.Start), EndsAt: localClock(day, interval.End)})
 			}
 		}

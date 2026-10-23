@@ -14,10 +14,13 @@ const dayNames: Record<Weekday, string> = {
   sunday: "Воскресенье",
 };
 
-export function Availability() {
+export function Availability({ onTimeZoneReady }: { onTimeZoneReady: (zone: string) => void }) {
   const [state, send] = useMachine(weeklyAvailabilityMachine);
   const formRef = useRef<HTMLFormElement>(null);
   const { week, timeZone, errors } = state.context;
+  useEffect(() => {
+    if (timeZone) onTimeZoneReady(timeZone);
+  }, [timeZone, onTimeZoneReady]);
   const saving = state.matches("saving");
   const success = state.matches({ editable: "saved" });
   const zoneError = state.matches("detectionFailed")
