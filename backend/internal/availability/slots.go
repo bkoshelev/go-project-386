@@ -20,19 +20,80 @@ type Result struct {
 // Calculate suggests future quarter-hour starts fitting entirely in continuous
 // working time and the fourteen-date UTC window. A nil location means uninitialized.
 func Calculate(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time) Result {
+	return newSnapshot(week, location, duration, now).Suggestions()
+}
+
+// Reason identifies the first unmet availability rule, in contract priority order.
+type Reason string
+
+// Reasons follow the public contract priority, from initialization to occupation.
+const (
+	ScheduleNotInitialized Reason = "schedule_not_initialized"
+	StartsInPast           Reason = "starts_in_past"
+	OutsideBookingWindow   Reason = "outside_booking_window"
+	OutsideWorkingHours    Reason = "outside_working_hours"
+	TimeOccupied           Reason = "time_occupied"
+)
+
+// Snapshot contains the settings and busy intervals used by both reads and writes.
+type Snapshot struct {
+	Window          Result
+	Working         []Slot
+	Duration, Pause time.Duration
+	Initialized     bool
+	Busy            []Slot
+	EventName       string
+}
+
+func newSnapshot(week scheduling.Week, location *time.Location, duration time.Duration, now time.Time) Snapshot {
 	now = now.UTC()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	result := Result{GeneratedAt: now, WindowStartsAt: start, WindowEndsAt: start.AddDate(0, 0, 14), Slots: []Slot{}}
-	if location == nil || duration <= 0 {
+	s := Snapshot{Window: Result{GeneratedAt: now, WindowStartsAt: start, WindowEndsAt: start.AddDate(0, 0, 14), Slots: []Slot{}}, Duration: duration, Initialized: location != nil}
+	if location != nil {
+		s.Working = weeklyWorkingRanges(week, location, s.Window.WindowStartsAt, s.Window.WindowEndsAt)
+	}
+	return s
+}
+
+// Check applies the same rules to any minute-aligned start, without reserving it.
+func (s Snapshot) Check(start time.Time) Reason {
+	if !s.Initialized {
+		return ScheduleNotInitialized
+	}
+	if !start.After(s.Window.GeneratedAt) {
+		return StartsInPast
+	}
+	end := start.Add(s.Duration)
+	if start.Before(s.Window.WindowStartsAt) || end.After(s.Window.WindowEndsAt) {
+		return OutsideBookingWindow
+	}
+	fits := false
+	for _, working := range s.Working {
+		if !start.Before(working.StartsAt) && !end.After(working.EndsAt) {
+			fits = true
+			break
+		}
+	}
+	if !fits {
+		return OutsideWorkingHours
+	}
+	for _, busy := range s.Busy {
+		if start.Before(busy.EndsAt.Add(s.Pause)) && end.Add(s.Pause).After(busy.StartsAt) {
+			return TimeOccupied
+		}
+	}
+	return ""
+}
+
+// Suggestions finds quarter-hour starts using exactly the creation rules.
+func (s Snapshot) Suggestions() Result {
+	result := s.Window
+	if s.Duration <= 0 {
 		return result
 	}
-	ranges := weeklyWorkingRanges(week, location, result.WindowStartsAt, result.WindowEndsAt)
-	for instant := now.Truncate(15 * time.Minute).Add(15 * time.Minute); !instant.Add(duration).After(result.WindowEndsAt); instant = instant.Add(15 * time.Minute) {
-		for _, working := range ranges {
-			if !instant.Before(working.StartsAt) && !instant.Add(duration).After(working.EndsAt) {
-				result.Slots = append(result.Slots, Slot{StartsAt: instant, EndsAt: instant.Add(duration)})
-				break
-			}
+	for instant := result.GeneratedAt.Truncate(15 * time.Minute).Add(15 * time.Minute); !instant.Add(s.Duration).After(result.WindowEndsAt); instant = instant.Add(15 * time.Minute) {
+		if s.Check(instant) == "" {
+			result.Slots = append(result.Slots, Slot{StartsAt: instant, EndsAt: instant.Add(s.Duration)})
 		}
 	}
 	return result

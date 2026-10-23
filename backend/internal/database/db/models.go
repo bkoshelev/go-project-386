@@ -8,6 +8,15 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Booking struct {
+	ID          pgtype.UUID
+	EventTypeID pgtype.UUID
+	StartsAt    pgtype.Timestamptz
+	EndsAt      pgtype.Timestamptz
+	GuestName   string
+	GuestEmail  string
+}
+
 type CalendarOwner struct {
 	Singleton bool
 	FullName  string
