@@ -1,5 +1,5 @@
 import { Anchor, Button, Container, Divider, Group, Text, Title } from "@mantine/core";
-import { Availability } from "./features/manage-weekly-availability";
+import { AvailabilityPage } from "./AvailabilityPage";
 import { Booking } from "./Booking";
 import { ManageEventTypes } from "./features/manage-event-types";
 
@@ -42,7 +42,7 @@ export function App() {
           </Group>
         )}
         {path === "/admin/availability" ? (
-          <Availability />
+          <AvailabilityPage />
         ) : path === "/admin" ? (
           <ManageEventTypes />
         ) : path.startsWith("/book") ? (

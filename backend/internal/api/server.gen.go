@@ -12,16 +12,26 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+
+	// (GET /api/admin/availability/dates/{date})
+	GetDateAvailability(c *gin.Context, date openapi_types.Date)
+
+	// (PUT /api/admin/availability/dates/{date})
+	UpdateDateAvailability(c *gin.Context, date openapi_types.Date)
 
 	// (GET /api/admin/availability/weekly)
 	GetWeeklyAvailability(c *gin.Context)
 
 	// (PUT /api/admin/availability/weekly)
 	UpdateWeeklyAvailability(c *gin.Context)
+
+	// (GET /api/admin/bookings)
+	ListOwnerBookings(c *gin.Context)
 
 	// (POST /api/admin/event-types)
 	CreateEventType(c *gin.Context)
@@ -34,6 +44,9 @@ type ServerInterface interface {
 
 	// (POST /api/admin/scheduling-settings/time-zone)
 	InitializeScheduleTimeZone(c *gin.Context)
+
+	// (POST /api/bookings)
+	CreateBooking(c *gin.Context)
 
 	// (GET /api/event-types)
 	ListEventTypes(c *gin.Context)
@@ -63,6 +76,56 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
+// GetDateAvailability operation middleware
+func (siw *ServerInterfaceWrapper) GetDateAvailability(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "date" -------------
+	var date openapi_types.Date
+
+	err = runtime.BindStyledParameterWithOptions("simple", "date", c.Param("date"), &date, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "date", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter date: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.GetDateAvailability(c, date)
+}
+
+// UpdateDateAvailability operation middleware
+func (siw *ServerInterfaceWrapper) UpdateDateAvailability(c *gin.Context) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "date" -------------
+	var date openapi_types.Date
+
+	err = runtime.BindStyledParameterWithOptions("simple", "date", c.Param("date"), &date, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "date", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter date: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.UpdateDateAvailability(c, date)
+}
+
 // GetWeeklyAvailability operation middleware
 func (siw *ServerInterfaceWrapper) GetWeeklyAvailability(c *gin.Context) {
 
@@ -87,6 +150,19 @@ func (siw *ServerInterfaceWrapper) UpdateWeeklyAvailability(c *gin.Context) {
 	}
 
 	siw.Handler.UpdateWeeklyAvailability(c)
+}
+
+// ListOwnerBookings operation middleware
+func (siw *ServerInterfaceWrapper) ListOwnerBookings(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.ListOwnerBookings(c)
 }
 
 // CreateEventType operation middleware
@@ -139,6 +215,19 @@ func (siw *ServerInterfaceWrapper) InitializeScheduleTimeZone(c *gin.Context) {
 	}
 
 	siw.Handler.InitializeScheduleTimeZone(c)
+}
+
+// CreateBooking operation middleware
+func (siw *ServerInterfaceWrapper) CreateBooking(c *gin.Context) {
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.CreateBooking(c)
 }
 
 // ListEventTypes operation middleware
@@ -270,18 +359,217 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
+	router.GET(options.BaseURL+"/api/admin/availability/dates/:date", wrapper.GetDateAvailability)
+	router.PUT(options.BaseURL+"/api/admin/availability/dates/:date", wrapper.UpdateDateAvailability)
 	router.GET(options.BaseURL+"/api/admin/availability/weekly", wrapper.GetWeeklyAvailability)
 	router.PUT(options.BaseURL+"/api/admin/availability/weekly", wrapper.UpdateWeeklyAvailability)
+	router.GET(options.BaseURL+"/api/admin/bookings", wrapper.ListOwnerBookings)
 	router.POST(options.BaseURL+"/api/admin/event-types", wrapper.CreateEventType)
 	router.GET(options.BaseURL+"/api/admin/scheduling-settings", wrapper.GetSchedulingSettings)
 	router.PUT(options.BaseURL+"/api/admin/scheduling-settings", wrapper.UpdateSchedulingSettings)
 	router.POST(options.BaseURL+"/api/admin/scheduling-settings/time-zone", wrapper.InitializeScheduleTimeZone)
+	router.POST(options.BaseURL+"/api/bookings", wrapper.CreateBooking)
 	router.GET(options.BaseURL+"/api/event-types", wrapper.ListEventTypes)
 	router.GET(options.BaseURL+"/api/event-types/:eventTypeId", wrapper.GetEventType)
 	router.GET(options.BaseURL+"/api/event-types/:eventTypeId/availability", wrapper.GetEventAvailability)
 	router.GET(options.BaseURL+"/api/owner", wrapper.GetCalendarOwner)
 	router.GET(options.BaseURL+"/healthz", wrapper.GetHealth)
 	router.GET(options.BaseURL+"/readyz", wrapper.GetReadiness)
+}
+
+type GetDateAvailabilityRequestObject struct {
+	Date openapi_types.Date `json:"date"`
+}
+
+type GetDateAvailabilityResponseObject interface {
+	VisitGetDateAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type GetDateAvailability200JSONResponse DateAvailability
+
+func (response GetDateAvailability200JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability400JSONResponse struct {
+	Code    GetDateAvailability400JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability400JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability409JSONResponse struct {
+	Code    GetDateAvailability409JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability409JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability500JSONResponse struct {
+	Code    GetDateAvailability500JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability500JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDateAvailability503JSONResponse struct {
+	Code    GetDateAvailability503JSONResponseBodyCode `json:"code"`
+	Message string                                     `json:"message"`
+}
+
+func (response GetDateAvailability503JSONResponse) VisitGetDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailabilityRequestObject struct {
+	Date openapi_types.Date `json:"date"`
+	Body *UpdateDateAvailabilityJSONRequestBody
+}
+
+type UpdateDateAvailabilityResponseObject interface {
+	VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error
+}
+
+type UpdateDateAvailability200JSONResponse DateAvailability
+
+func (response UpdateDateAvailability200JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability400JSONResponse struct {
+	Code    UpdateDateAvailability400JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability400JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability409JSONResponse struct {
+	Code    UpdateDateAvailability409JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability409JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability422JSONResponse ValidationError
+
+func (response UpdateDateAvailability422JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability500JSONResponse struct {
+	Code    UpdateDateAvailability500JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability500JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateDateAvailability503JSONResponse struct {
+	Code    UpdateDateAvailability503JSONResponseBodyCode `json:"code"`
+	Message string                                        `json:"message"`
+}
+
+func (response UpdateDateAvailability503JSONResponse) VisitUpdateDateAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 type GetWeeklyAvailabilityRequestObject struct {
@@ -432,6 +720,61 @@ type UpdateWeeklyAvailability503JSONResponse struct {
 }
 
 func (response UpdateWeeklyAvailability503JSONResponse) VisitUpdateWeeklyAvailabilityResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOwnerBookingsRequestObject struct {
+}
+
+type ListOwnerBookingsResponseObject interface {
+	VisitListOwnerBookingsResponse(w http.ResponseWriter) error
+}
+
+type ListOwnerBookings200JSONResponse OwnerBookings
+
+func (response ListOwnerBookings200JSONResponse) VisitListOwnerBookingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOwnerBookings500JSONResponse struct {
+	Code    ListOwnerBookings500JSONResponseBodyCode `json:"code"`
+	Message string                                   `json:"message"`
+}
+
+func (response ListOwnerBookings500JSONResponse) VisitListOwnerBookingsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListOwnerBookings503JSONResponse struct {
+	Code    ListOwnerBookings503JSONResponseBodyCode `json:"code"`
+	Message string                                   `json:"message"`
+}
+
+func (response ListOwnerBookings503JSONResponse) VisitListOwnerBookingsResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -748,6 +1091,124 @@ type InitializeScheduleTimeZone503JSONResponse struct {
 }
 
 func (response InitializeScheduleTimeZone503JSONResponse) VisitInitializeScheduleTimeZoneResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(503)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBookingRequestObject struct {
+	Body *CreateBookingJSONRequestBody
+}
+
+type CreateBookingResponseObject interface {
+	VisitCreateBookingResponse(w http.ResponseWriter) error
+}
+
+type CreateBooking201JSONResponse BookingConfirmation
+
+func (response CreateBooking201JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking400JSONResponse struct {
+	Code    CreateBooking400JSONResponseBodyCode `json:"code"`
+	Message string                               `json:"message"`
+}
+
+func (response CreateBooking400JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking404JSONResponse struct {
+	Code    CreateBooking404JSONResponseBodyCode `json:"code"`
+	Message string                               `json:"message"`
+}
+
+func (response CreateBooking404JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking409JSONResponse = CreateBooking409JSONResponseBody
+
+func (response CreateBooking409JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response.union); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking422JSONResponse ValidationError
+
+func (response CreateBooking422JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking500JSONResponse struct {
+	Code    CreateBooking500JSONResponseBodyCode `json:"code"`
+	Message string                               `json:"message"`
+}
+
+func (response CreateBooking500JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(500)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateBooking503JSONResponse struct {
+	Code    CreateBooking503JSONResponseBodyCode `json:"code"`
+	Message string                               `json:"message"`
+}
+
+func (response CreateBooking503JSONResponse) VisitCreateBookingResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
@@ -1111,11 +1572,20 @@ func (response GetReadiness503JSONResponse) VisitGetReadinessResponse(w http.Res
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
+	// (GET /api/admin/availability/dates/{date})
+	GetDateAvailability(ctx context.Context, request GetDateAvailabilityRequestObject) (GetDateAvailabilityResponseObject, error)
+
+	// (PUT /api/admin/availability/dates/{date})
+	UpdateDateAvailability(ctx context.Context, request UpdateDateAvailabilityRequestObject) (UpdateDateAvailabilityResponseObject, error)
+
 	// (GET /api/admin/availability/weekly)
 	GetWeeklyAvailability(ctx context.Context, request GetWeeklyAvailabilityRequestObject) (GetWeeklyAvailabilityResponseObject, error)
 
 	// (PUT /api/admin/availability/weekly)
 	UpdateWeeklyAvailability(ctx context.Context, request UpdateWeeklyAvailabilityRequestObject) (UpdateWeeklyAvailabilityResponseObject, error)
+
+	// (GET /api/admin/bookings)
+	ListOwnerBookings(ctx context.Context, request ListOwnerBookingsRequestObject) (ListOwnerBookingsResponseObject, error)
 
 	// (POST /api/admin/event-types)
 	CreateEventType(ctx context.Context, request CreateEventTypeRequestObject) (CreateEventTypeResponseObject, error)
@@ -1128,6 +1598,9 @@ type StrictServerInterface interface {
 
 	// (POST /api/admin/scheduling-settings/time-zone)
 	InitializeScheduleTimeZone(ctx context.Context, request InitializeScheduleTimeZoneRequestObject) (InitializeScheduleTimeZoneResponseObject, error)
+
+	// (POST /api/bookings)
+	CreateBooking(ctx context.Context, request CreateBookingRequestObject) (CreateBookingResponseObject, error)
 
 	// (GET /api/event-types)
 	ListEventTypes(ctx context.Context, request ListEventTypesRequestObject) (ListEventTypesResponseObject, error)
@@ -1205,6 +1678,65 @@ type strictHandler struct {
 	options     StrictGinServerOptions
 }
 
+// GetDateAvailability operation middleware
+func (sh *strictHandler) GetDateAvailability(ctx *gin.Context, date openapi_types.Date) {
+	var request GetDateAvailabilityRequestObject
+
+	request.Date = date
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.GetDateAvailability(ctx, request.(GetDateAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDateAvailability")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(GetDateAvailabilityResponseObject); ok {
+		if err := validResponse.VisitGetDateAvailabilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateDateAvailability operation middleware
+func (sh *strictHandler) UpdateDateAvailability(ctx *gin.Context, date openapi_types.Date) {
+	var request UpdateDateAvailabilityRequestObject
+
+	request.Date = date
+
+	var body UpdateDateAvailabilityJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.UpdateDateAvailability(ctx, request.(UpdateDateAvailabilityRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateDateAvailability")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(UpdateDateAvailabilityResponseObject); ok {
+		if err := validResponse.VisitUpdateDateAvailabilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetWeeklyAvailability operation middleware
 func (sh *strictHandler) GetWeeklyAvailability(ctx *gin.Context) {
 	var request GetWeeklyAvailabilityRequestObject
@@ -1253,6 +1785,30 @@ func (sh *strictHandler) UpdateWeeklyAvailability(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(UpdateWeeklyAvailabilityResponseObject); ok {
 		if err := validResponse.VisitUpdateWeeklyAvailabilityResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListOwnerBookings operation middleware
+func (sh *strictHandler) ListOwnerBookings(ctx *gin.Context) {
+	var request ListOwnerBookingsRequestObject
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.ListOwnerBookings(ctx, request.(ListOwnerBookingsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListOwnerBookings")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(ListOwnerBookingsResponseObject); ok {
+		if err := validResponse.VisitListOwnerBookingsResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {
@@ -1370,6 +1926,37 @@ func (sh *strictHandler) InitializeScheduleTimeZone(ctx *gin.Context) {
 		sh.options.HandlerErrorFunc(ctx, err)
 	} else if validResponse, ok := response.(InitializeScheduleTimeZoneResponseObject); ok {
 		if err := validResponse.VisitInitializeScheduleTimeZoneResponse(ctx.Writer); err != nil {
+			sh.options.ResponseErrorHandlerFunc(ctx, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(ctx, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateBooking operation middleware
+func (sh *strictHandler) CreateBooking(ctx *gin.Context) {
+	var request CreateBookingRequestObject
+
+	var body CreateBookingJSONRequestBody
+	if err := ctx.ShouldBindJSON(&body); err != nil {
+		sh.options.RequestErrorHandlerFunc(ctx, err)
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx *gin.Context, request interface{}) (interface{}, error) {
+		return sh.ssi.CreateBooking(ctx, request.(CreateBookingRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateBooking")
+	}
+
+	response, err := handler(ctx, request)
+
+	if err != nil {
+		sh.options.HandlerErrorFunc(ctx, err)
+	} else if validResponse, ok := response.(CreateBookingResponseObject); ok {
+		if err := validResponse.VisitCreateBookingResponse(ctx.Writer); err != nil {
 			sh.options.ResponseErrorHandlerFunc(ctx, err)
 		}
 	} else if response != nil {

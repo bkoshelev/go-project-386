@@ -38,3 +38,10 @@ type Settings struct {
 	TimeZone            *string
 	MeetingPauseMinutes int32
 }
+
+// Date is the explicit setting of one owner-local date. Nil Intervals inherits
+// the week; a non-nil empty slice deliberately has no working hours.
+type Date struct {
+	IsBlocked bool        `json:"isBlocked"`
+	Intervals *[]Interval `json:"intervals,omitempty"`
+}

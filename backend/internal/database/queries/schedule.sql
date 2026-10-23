@@ -20,4 +20,4 @@ WHERE singleton = TRUE
 RETURNING time_zone, meeting_pause_minutes;
 
 -- name: GetAvailabilitySchedule :one
-SELECT time_zone, weekly_availability FROM scheduling_settings WHERE singleton = TRUE;
+SELECT time_zone, weekly_availability, meeting_pause_minutes, date_availability FROM scheduling_settings WHERE singleton = TRUE;
