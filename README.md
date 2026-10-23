@@ -344,6 +344,9 @@ pnpm build
 pnpm test:smoke
 ```
 
+Для короткого цикла между изменениями используйте `pnpm typecheck` после
+[подготовки клиента](frontend/README.md#быстрая-проверка-типов).
+
 Для разработки `pnpm dev` проксирует API к backend согласно
 [frontend/vite.config.ts](frontend/vite.config.ts).
 Интеграционный smoke выбирает свободные порты через fixtures; фиксированный порт

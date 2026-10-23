@@ -7,6 +7,7 @@
     "api:generate": "pnpm --dir ../api generate",
     "dev": "pnpm api:generate && vite",
     "build": "pnpm api:generate && tsc -b && vite build",
+    "typecheck": "tsc -b",
     "check": "pnpm --dir ../api check && pnpm api:generate && pnpm lint && pnpm format:check",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
