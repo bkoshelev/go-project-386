@@ -91,15 +91,15 @@ func newTestRouter(t *testing.T, output io.Writer) *gin.Engine {
 
 func TestOnlyImplementedOperationsAreRegistered(t *testing.T) {
 	router := newTestRouter(t, io.Discard)
-	require.Len(t, router.Routes(), 12)
-	for _, path := range []string{"/api/bookings", "/api/admin/bookings", "/api/admin/availability/dates/2026-10-19"} {
+	require.Len(t, router.Routes(), 14)
+	for _, path := range []string{"/api/bookings", "/api/admin/availability/dates/2026-10-19"} {
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
 		require.Equal(t, http.StatusNotFound, response.Code)
 	}
 	// Pre-binding validation must not turn an unimplemented endpoint into a 422.
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/bookings", strings.NewReader(`{}`)))
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/event-types/00000000-0000-0000-0000-000000000000/availability/check", strings.NewReader(`{}`)))
 	require.Equal(t, http.StatusNotFound, response.Code)
 }
 

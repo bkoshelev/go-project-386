@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/bkoshelev/go-project-386/backend/internal/api"
+	"github.com/bkoshelev/go-project-386/backend/internal/booking"
 	"github.com/bkoshelev/go-project-386/backend/internal/database/db"
 )
 
@@ -44,6 +45,7 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 	handler := applicationHandler{healthHandler: healthHandler{checkReady: options.Readiness}, now: options.Now}
 	if options.Database != nil {
 		handler.queries = db.New(options.Database)
+		handler.database, _ = options.Database.(booking.Database)
 	}
 	if err := registerAPI(router, logger, handler, options.Database); err != nil {
 		return nil, err
@@ -59,8 +61,9 @@ func NewRouter(logger *slog.Logger, mode string, options Options) (*gin.Engine, 
 
 type applicationHandler struct {
 	healthHandler
-	queries *db.Queries
-	now     func() time.Time
+	queries  *db.Queries
+	database booking.Database
+	now      func() time.Time
 }
 
 type healthHandler struct{ checkReady func(context.Context) error }

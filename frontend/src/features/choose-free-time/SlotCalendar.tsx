@@ -1,6 +1,7 @@
 import { Button, NativeSelect, Radio, Stack, Text } from "@mantine/core";
 import { useMachine } from "@xstate/react";
 import { useEffect } from "react";
+import type { AvailableSlot, EventType } from "../../api/generated";
 import { localDate, windowDates } from "./dates";
 import { freeTimeMachine } from "./model";
 
@@ -16,9 +17,11 @@ const utcLabel = new Intl.DateTimeFormat("ru-RU", {
 export function SlotCalendar({
   eventTypeId,
   onMissing,
+  onContinue,
 }: {
   eventTypeId: string;
   onMissing: () => void;
+  onContinue?: (selection: { event: EventType; slot: AvailableSlot }) => void;
 }) {
   const [state, send] = useMachine(freeTimeMachine, { input: { eventTypeId } });
   useEffect(() => {
@@ -104,6 +107,16 @@ export function SlotCalendar({
           Время выбрано: {instantLabel.format(new Date(chosen.startsAt))} —{" "}
           {instantLabel.format(new Date(chosen.endsAt))}
         </Text>
+      )}
+      {onContinue && (
+        <Button
+          disabled={!chosen}
+          onClick={() => {
+            if (chosen) onContinue({ event, slot: chosen });
+          }}
+        >
+          Продолжить
+        </Button>
       )}
       <Text c="dimmed">Выбор не резервирует время</Text>
       <Button variant="outline" onClick={() => send({ type: "refresh" })}>
