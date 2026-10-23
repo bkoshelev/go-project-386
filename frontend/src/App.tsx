@@ -1,10 +1,55 @@
-import { Anchor, Button, Container, Divider, Group, Text, Title } from "@mantine/core";
+import {
+  Anchor,
+  Button,
+  Container,
+  Divider,
+  Group,
+  Text,
+  Title,
+  type ContainerProps,
+} from "@mantine/core";
 import { AvailabilityPage } from "./AvailabilityPage";
 import { Booking } from "./Booking";
 import { ManageEventTypes } from "./features/manage-event-types";
 
+const pageContainerProps = {
+  "/": {
+    component: "main",
+    size: "md",
+    px: { base: "md", sm: "xl" },
+    py: { base: 64, sm: 96 },
+  },
+  "/admin": {
+    component: "main",
+    size: "xl",
+    px: { base: "md", sm: "xl" },
+    py: 28,
+  },
+  "/admin/availability": {
+    component: "main",
+    size: "md",
+    px: { base: "md", sm: "xl" },
+    py: { base: 64, sm: 96 },
+  },
+  "/book": {
+    component: "main",
+    size: "md",
+    px: { base: "md", sm: "xl" },
+    py: { base: 64, sm: 96 },
+  },
+} satisfies Record<
+  "/" | "/admin" | "/admin/availability" | "/book",
+  ContainerProps & { component: "main" }
+>;
+
 export function App() {
   const path = window.location.pathname;
+  const page =
+    path === "/admin" || path === "/admin/availability"
+      ? path
+      : path.startsWith("/book")
+        ? "/book"
+        : "/";
   return (
     <>
       <header>
@@ -27,7 +72,7 @@ export function App() {
         <Divider />
       </header>
 
-      <Container component="main" size="md" px={{ base: "md", sm: "xl" }} py={{ base: 64, sm: 96 }}>
+      <Container {...pageContainerProps[page]}>
         {path.startsWith("/admin") && (
           <Group component="nav" aria-label="Разделы администратора" mb="xl">
             <Anchor href="/admin" aria-current={path === "/admin" ? "page" : undefined}>

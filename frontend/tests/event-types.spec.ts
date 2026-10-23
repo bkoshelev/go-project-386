@@ -9,6 +9,7 @@ test("владелец создаёт тип, гость читает его п�
   await page.getByRole("link", { name: "Администрирование" }).click();
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByText("Типов событий пока нет")).toBeVisible();
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await page.getByRole("textbox", { name: "Название" }).fill("  Обсуждение проекта  ");
   await page.getByLabel("Описание", { exact: true }).fill("План и вопросы");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("2");
@@ -57,15 +58,18 @@ test("серверная нормализация Unicode-пробелов не 
     // Go retains U+FEFF, whereas String.trim() removes it from the server's response.
     ["\u0085\uFEFF\u0085", "\uFEFF", 2],
   ] as const) {
+    await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
     await page.getByRole("textbox", { name: "Название" }).fill(input);
     await page.getByRole("spinbutton", { name: "Длительность" }).fill("30");
     await page.getByRole("button", { name: "Создать тип события" }).click();
     await expect(page.getByText("Тип события создан", { exact: true })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "Название" })).toBeEmpty();
     const catalog = await (await request.get("/api/event-types")).json();
     expect(catalog.items).toHaveLength(count);
     expect(catalog.items[count - 1].name).toBe(expected);
     await expect(page.getByRole("listitem")).toHaveCount(count);
+    await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
+    await expect(page.getByRole("textbox", { name: "Название" })).toBeEmpty();
+    await page.getByRole("button", { name: "Закрыть форму", exact: true }).click();
   }
 });
 
@@ -75,6 +79,7 @@ test("ошибки формы сохраняют ввод, фокусируют 
     if (request.method() === "POST") writes++;
   });
   await page.goto("/admin");
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   const name = page.getByRole("textbox", { name: "Название" });
   const duration = page.getByRole("spinbutton", { name: "Длительность" });
   const save = page.getByRole("button", { name: "Создать тип события" });
@@ -107,6 +112,7 @@ test("границы длительности вводятся в UI в мину
     ["hours", "1", "60 мин"],
     ["hours", "23", "1380 мин"],
   ]) {
+    await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
     await page.getByRole("textbox", { name: "Название" }).fill(`${unit} ${value}`);
     await page.getByRole("spinbutton", { name: "Длительность" }).fill(value);
     await page.getByLabel("Единица длительности").selectOption(unit);
@@ -126,6 +132,7 @@ test("сбой БД виден при чтении и записи, ручной
   test.setTimeout(60_000);
   await page.goto("/admin");
   await expect(page.getByText("Типов событий пока нет")).toBeVisible();
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await page.getByRole("textbox", { name: "Название" }).fill("После восстановления");
   await page.getByRole("textbox", { name: "Описание" }).fill("Сохранённый ввод");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("30");
@@ -166,6 +173,7 @@ test("сохранение блокирует повтор, потерянный
   request,
 }) => {
   await page.goto("/admin");
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await page.getByRole("textbox", { name: "Название" }).fill("Без ответа");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("30");
   let release!: () => void;
@@ -191,6 +199,8 @@ test("сохранение блокирует повтор, потерянный
   await expect(page.getByRole("textbox", { name: "Описание" })).toBeDisabled();
   await expect(page.getByRole("spinbutton", { name: "Длительность" })).toBeDisabled();
   await expect(page.getByLabel("Единица длительности")).toBeDisabled();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "Создать тип события" })).toBeVisible();
   await page.locator("form").evaluate((form: HTMLFormElement) => form.requestSubmit());
   release();
   await expect(page.getByRole("alert")).toContainText("Не удалось получить результат сохранения");
@@ -214,6 +224,7 @@ test("серверные ошибки связаны с полями, сохра
     await route.fulfill({ response });
   });
   await page.goto("/admin");
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   const name = page.getByRole("textbox", { name: "Название" });
   const duration = page.getByRole("spinbutton", { name: "Длительность" });
   await name.fill("Исходное название");
@@ -242,6 +253,7 @@ test("ошибка обновления каталога не отменяет �
 }) => {
   await page.goto("/admin");
   await expect(page.getByText("Типов событий пока нет")).toBeVisible();
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   let reads = 0;
   let writes = 0;
   page.on("request", (request) => {
@@ -259,10 +271,6 @@ test("ошибка обновления каталога не отменяет �
   await page.getByRole("button", { name: "Создать тип события" }).click();
   await expect(page.getByText("Тип события создан", { exact: true })).toBeVisible();
   await expect(page.getByRole("alert")).toHaveText("Не удалось загрузить типы событий");
-  await expect(page.getByRole("textbox", { name: "Название" })).toBeEmpty();
-  await expect(page.getByRole("textbox", { name: "Описание" })).toBeEmpty();
-  await expect(page.getByRole("spinbutton", { name: "Длительность" })).toBeEmpty();
-  await expect(page.getByLabel("Единица длительности")).toHaveValue("hours");
   expect(reads).toBe(1);
   await page.getByRole("button", { name: "Повторить", exact: true }).click();
   await expect(page.getByRole("listitem")).toHaveCount(1);
@@ -271,6 +279,11 @@ test("ошибка обновления каталога не отменяет �
   expect(reads).toBe(2);
   expect(writes).toBe(1);
   expect((await (await request.get("/api/event-types")).json()).items).toHaveLength(1);
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Название" })).toBeEmpty();
+  await expect(page.getByRole("textbox", { name: "Описание" })).toBeEmpty();
+  await expect(page.getByRole("spinbutton", { name: "Длительность" })).toBeEmpty();
+  await expect(page.getByLabel("Единица длительности")).toHaveValue("hours");
   await page.getByRole("textbox", { name: "Название" }).fill("Следующий тип события");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("1");
   await page.getByRole("button", { name: "Создать тип события" }).click();
@@ -308,6 +321,7 @@ test("запоздалое чтение не подменяет каталог �
   await page.goto("/admin");
   await started;
   await expect(page.getByText("Загрузка типов событий…", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await page.getByRole("textbox", { name: "Название" }).fill("Новый каталог");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("30");
   await page.getByRole("button", { name: "Создать тип события" }).click();
@@ -364,6 +378,7 @@ test("непригодный успешный ответ после записи
     await route.fulfill({ response, json: {} });
   });
   await page.goto("/admin");
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await page.getByRole("textbox", { name: "Название" }).fill("Ответ без подтверждения");
   await page.getByRole("textbox", { name: "Описание" }).fill("Сохранить ввод");
   await page.getByRole("spinbutton", { name: "Длительность" }).fill("2");
@@ -383,6 +398,7 @@ test("непригодный успешный ответ после записи
   await page.getByRole("button", { name: "Создать тип события" }).click();
   await expect(page.getByText("Тип события создан", { exact: true })).toBeVisible();
   await expect(page.getByRole("listitem")).toHaveCount(2);
+  await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
   await expect(page.getByLabel("Единица длительности")).toHaveValue("hours");
 });
 
@@ -406,6 +422,10 @@ for (const width of [320, 375, 768, 1440]) {
         width,
       );
       if (path === "/admin") {
+        await page.getByRole("button", { name: "+ Новый тип", exact: true }).click();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+          width,
+        );
         const name = page.getByRole("textbox", { name: "Название" });
         await name.focus();
         await page.keyboard.type("Клавиатура");
@@ -435,3 +455,42 @@ for (const width of [320, 375, 768, 1440]) {
     }
   });
 }
+
+test("модальное создание сохраняет черновик при закрытии и возвращает фокус", async ({ page }) => {
+  let writes = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST") writes++;
+  });
+  await page.goto("/admin");
+  const trigger = page.getByRole("button", { name: "+ Новый тип", exact: true });
+  await trigger.click();
+  const name = page.getByRole("textbox", { name: "Название" });
+  await expect(name).toBeFocused();
+  await name.fill("Черновик встречи");
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await page.getByRole("button", { name: "Добавить тип события", exact: true }).click();
+  await expect(name).toHaveValue("Черновик встречи");
+  await page.getByRole("button", { name: "Закрыть форму", exact: true }).click();
+  expect(writes).toBe(0);
+});
+
+test("предпросмотр карточки показывает реальные поля без записи", async ({ page, request }) => {
+  await request.post("/api/admin/event-types", {
+    data: { name: "Знакомство", description: "Обсудим задачу", durationMinutes: 15 },
+  });
+  let writes = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST") writes++;
+  });
+  await page.goto("/admin");
+  await page.getByRole("button", { name: "Как увидит гость: Знакомство", exact: true }).click();
+  const preview = page.getByRole("dialog", { name: "Предпросмотр для гостя" });
+  await expect(preview.getByRole("heading", { name: "Знакомство", exact: true })).toBeVisible();
+  await expect(preview.getByText("Обсудим задачу", { exact: true })).toBeVisible();
+  await expect(preview.getByText("15 мин", { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(writes).toBe(0);
+});
