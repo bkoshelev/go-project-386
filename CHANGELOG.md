@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.6.0](https://github.com/bkoshelev/go-project-386/compare/v0.5.0...v0.6.0) (2026-10-23)
+
+
+### Features
+
+* add persistent event types and guest catalog ([#57](https://github.com/bkoshelev/go-project-386/issues/57)) ([cc81745](https://github.com/bkoshelev/go-project-386/commit/cc81745cfb69856617ea756ab60ac0d8907852ba)), closes [#34](https://github.com/bkoshelev/go-project-386/issues/34)
+* **agents:** add browser video recording skill ([#60](https://github.com/bkoshelev/go-project-386/issues/60)) ([7aca10f](https://github.com/bkoshelev/go-project-386/commit/7aca10f2488fd32cbcfaa580900d7438c3dffc2c))
+* **booking:** бронирование выбранного слота с защитой от конфликтов ([#72](https://github.com/bkoshelev/go-project-386/issues/72)) ([2e7762a](https://github.com/bkoshelev/go-project-386/commit/2e7762a859ef29a0c43c37c2e5472b8c99543290))
+* **frontend:** добавить быстрый typecheck ([#75](https://github.com/bkoshelev/go-project-386/issues/75)) ([e61958d](https://github.com/bkoshelev/go-project-386/commit/e61958df1ffedaf500c2c3651e293a11350d7f0a)), closes [#54](https://github.com/bkoshelev/go-project-386/issues/54)
+* **frontend:** обновить страницу управления типами событий ([#76](https://github.com/bkoshelev/go-project-386/issues/76)) ([b994fec](https://github.com/bkoshelev/go-project-386/commit/b994fec623896191e56198738a7a9a719e96347b))
+* **scheduling:** собственные интервалы и блокировка конкретной даты ([#74](https://github.com/bkoshelev/go-project-386/issues/74)) ([fbf237c](https://github.com/bkoshelev/go-project-386/commit/fbf237c108848ac39ca75721d73a0cf3a99f4ac1))
+
+
+### Documentation
+
+* deduplicate agent instructions and guide context reading ([#55](https://github.com/bkoshelev/go-project-386/issues/55)) ([#73](https://github.com/bkoshelev/go-project-386/issues/73)) ([831206a](https://github.com/bkoshelev/go-project-386/commit/831206a47543e641890fd1b6ea3638ada2b4910a))
+
+
+### Continuous Integration
+
+* use preinstalled Chrome for Playwright smoke tests ([#69](https://github.com/bkoshelev/go-project-386/issues/69)) ([dd9bd33](https://github.com/bkoshelev/go-project-386/commit/dd9bd33b5a267c40167abf9ce5fc7da6d2ce4091))
+
+
+### Miscellaneous Chores
+
+* upgrade Go to 1.26.10 ([#58](https://github.com/bkoshelev/go-project-386/issues/58)) ([a37597d](https://github.com/bkoshelev/go-project-386/commit/a37597df62ff7e15573fb7f4b6b1fc347f164c1d))
+
 ## [0.5.0](https://github.com/bkoshelev/go-project-386/compare/v0.4.0...v0.5.0) (2026-10-20)
 
 
