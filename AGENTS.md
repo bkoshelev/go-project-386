@@ -1,14 +1,10 @@
-# Правила работы с репозиторием
-
-
-
-```
-- Do not preserve backward compatibility.
-- Choose the simplest implementation that fully meets the current requirements.
-- Prefer established, well-maintained libraries over custom implementations.
-- Fix the cause, not the symptom.
+# Правила работы с репозиторием  
+  
+- Do not preserve backward compatibility.  
+- Choose the simplest implementation that fully meets the current requirements.  
+- Prefer established, well-maintained libraries over custom implementations.  
+- Fix the cause, not the symptom.  
 - Suggest best practices, even if they may require refactoring.
-```
 
 ## Использование скиллов
 
@@ -73,7 +69,6 @@
 ## Правила коммитов и запросов на слияние
 
 Используйте Conventional Commits в соответствии с историей репозитория: `feat(frontend): ...`, `fix(backend): ...` или `chore: ...`. Предпочитайте слияние с объединением коммитов (squash), а заголовок PR оформляйте по Conventional Commits. Описывайте изменения поведения и выполненные проверки; добавляйте ссылки на связанные задачи, а при изменениях интерфейса — снимки экрана. Release-please управляет общей версией проекта и журналами изменений; согласовывайте с командой изменения, нарушающие обратную совместимость.
-
 
 ### Issue tracker
 
