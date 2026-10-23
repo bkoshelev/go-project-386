@@ -1,5 +1,15 @@
 # Правила работы с репозиторием
 
+
+
+```
+- Do not preserve backward compatibility.
+- Choose the simplest implementation that fully meets the current requirements.
+- Prefer established, well-maintained libraries over custom implementations.
+- Fix the cause, not the symptom.
+- Suggest best practices, even if they may require refactoring.
+```
+
 ## Использование скиллов
 
 - Скиллы установлены локально в `.agents/skills/`.
