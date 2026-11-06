@@ -31,7 +31,10 @@ test("saving ignores repeat submission and draft changes until a confirmed respo
   const actor = createActor(weeklyAvailabilityMachine).start();
   try {
     await waitFor(actor, (state) => state.matches("editable"));
+    actor.send({ type: "daySelected", dayIndex: 2 });
     actor.send({ type: "saveRequested" });
+    actor.send({ type: "daySelected", dayIndex: 4 });
+    expect(actor.getSnapshot().context.selectedDay).toBe(2);
     actor.send({
       type: "intervalChanged",
       dayIndex: 0,
@@ -243,6 +246,62 @@ test("refresh moves an expired date into the new window and cancel clears the sl
     actor.send({ type: "cancel" });
     expect(actor.getSnapshot().context.selected).toBe("");
     expect(actor.getSnapshot().context.data).toBeNull();
+  } finally {
+    actor.stop();
+  }
+});
+
+test("выбор дня сохраняет черновики; ошибка другого дня открывает его и подтверждённая неделя не меняется", async () => {
+  client.setConfig({
+    baseUrl: "http://scheduling.test",
+    fetch: async (request) => {
+      if (!(request instanceof Request)) throw new Error("Expected an HTTP request");
+      return Response.json(request.url.endsWith("/weekly") ? week : { timeZone: "UTC" });
+    },
+  });
+  const actor = createActor(weeklyAvailabilityMachine).start();
+  try {
+    await waitFor(actor, (state) => state.matches("editable"));
+    actor.send({ type: "intervalAdded", dayIndex: 2 });
+    actor.send({ type: "daySelected", dayIndex: 4 });
+    expect(actor.getSnapshot().context.selectedDay).toBe(4);
+    actor.send({ type: "saveRequested" });
+    expect(actor.getSnapshot().context.selectedDay).toBe(2);
+    expect(actor.getSnapshot().context.week?.days[2].intervals).toHaveLength(2);
+    expect(actor.getSnapshot().context.confirmedWeek).toEqual(week);
+  } finally {
+    actor.stop();
+  }
+});
+
+test("подтверждённый ответ заменяет порядок интервалов, сохраняя выбранный день", async () => {
+  const draft = structuredClone(week);
+  draft.days[0].intervals = [
+    { start: "14:00", end: "18:00" },
+    { start: "09:00", end: "13:00" },
+  ];
+  const canonical = structuredClone(draft);
+  canonical.days[0].intervals = [
+    { start: "09:00", end: "13:00" },
+    { start: "14:00", end: "18:00" },
+  ];
+  client.setConfig({
+    baseUrl: "http://scheduling.test",
+    fetch: async (request) => {
+      if (!(request instanceof Request)) throw new Error("Expected an HTTP request");
+      if (request.method === "PUT") return Response.json(canonical);
+      return Response.json(request.url.endsWith("/weekly") ? draft : { timeZone: "UTC" });
+    },
+  });
+  const actor = createActor(weeklyAvailabilityMachine).start();
+  try {
+    await waitFor(actor, (state) => state.matches("editable"));
+    actor.send({ type: "daySelected", dayIndex: 2 });
+    actor.send({ type: "saveRequested" });
+    await waitFor(actor, (state) => state.matches({ editable: "saved" }));
+    expect(actor.getSnapshot().context.week).toEqual(canonical);
+    expect(actor.getSnapshot().context.confirmedWeek).toEqual(canonical);
+    expect(actor.getSnapshot().context.selectedDay).toBe(2);
   } finally {
     actor.stop();
   }

@@ -14,7 +14,11 @@ test("владелец настраивает неделю и восстанав
       ownerPage.getByText("Часовой пояс расписания: Europe/Moscow", { exact: true }),
     ).toBeVisible();
     await expect(ownerPage.getByText("Рабочие интервалы пока не заданы")).toBeVisible();
-    await expect(ownerPage.getByRole("checkbox", { checked: true })).toHaveCount(7);
+    await expect(
+      ownerPage.getByRole("button", {
+        name: /^(Понедельник|Вторник|Среда|Четверг|Пятница|Суббота|Воскресенье)\. День заблокирован/,
+      }),
+    ).toHaveCount(7);
     const monday = ownerPage.getByRole("group", { name: "Понедельник", exact: true });
     await monday.getByRole("checkbox", { name: "День заблокирован" }).uncheck();
     await monday.getByRole("button", { name: "Добавить интервал" }).click();
@@ -261,7 +265,7 @@ test("ошибка записи и потерянный ответ сохран�
   await expect(page.getByRole("status")).toHaveText("Расписание сохранено");
 });
 
-for (const width of [320, 375, 768, 1440]) {
+for (const width of [320, 390, 768, 820, 1024, 1440]) {
   test(`недельный редактор доступен с клавиатуры и помещается на ${width} px`, async ({
     page,
   }, testInfo) => {
@@ -302,3 +306,159 @@ for (const width of [320, 375, 768, 1440]) {
       await page.screenshot({ path: testInfo.outputPath("availability-320.png"), fullPage: true });
   });
 }
+
+test("сетка сохраняет черновики семи дней, показывает края суток и направляет к ошибке другого дня", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/admin/availability");
+  const save = page.getByRole("button", { name: "Сохранить расписание" });
+  await expect(save).toBeEnabled();
+  const mondayRow = page.getByRole("button", { name: /^Понедельник\./ });
+  const wednesdayRow = page.getByRole("button", { name: /^Среда\./ });
+  const editor = page.getByRole("group", { name: "Понедельник", exact: true });
+  await expect(mondayRow).toHaveAttribute("aria-pressed", "true");
+  let writes = 0;
+  page.on("request", (req) => {
+    if (req.method() === "PUT") writes++;
+  });
+  await editor.getByRole("checkbox").uncheck();
+  for (const [index, start, end] of [
+    [1, "23:30", "24:00"],
+    [2, "00:00", "01:00"],
+    [3, "01:00", "01:01"],
+  ] as const) {
+    await editor.getByRole("button", { name: "Добавить интервал" }).click();
+    await expect(editor.getByLabel(`Начало интервала ${index}`, { exact: true })).toBeFocused();
+    await editor.getByLabel(`Начало интервала ${index}`, { exact: true }).fill(start);
+    await editor.getByLabel(`Окончание интервала ${index}`, { exact: true }).fill(end);
+  }
+  await expect(mondayRow).toHaveAccessibleName(
+    "Понедельник. Рабочие часы. 23:30–24:00, 00:00–01:00, 01:00–01:01",
+  );
+  await wednesdayRow.focus();
+  await page.keyboard.press("Enter");
+  await expect(wednesdayRow).toBeFocused();
+  const wednesday = page.getByRole("group", { name: "Среда", exact: true });
+  await wednesday.getByRole("button", { name: "Добавить интервал" }).click();
+  await mondayRow.click();
+  await expect(editor.getByLabel("Начало интервала 1", { exact: true })).toHaveValue("23:30");
+  expect(writes).toBe(0);
+  await expect(page.getByText("Изменения не сохранены", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Рабочие часы обычной недели")).toContainText("—");
+  await save.click();
+  await expect(wednesdayRow).toHaveAttribute("aria-pressed", "true");
+  await expect(wednesday.getByLabel("Начало интервала 1", { exact: true })).toBeFocused();
+  expect(writes).toBe(0);
+  await wednesday.getByLabel("Начало интервала 1", { exact: true }).fill("12:00");
+  await wednesday.getByLabel("Окончание интервала 1", { exact: true }).fill("13:00");
+  await save.click();
+  await expect(page.getByText("Расписание сохранено", { exact: true })).toBeVisible();
+  await expect(wednesdayRow).toHaveAttribute("aria-pressed", "true");
+  expect(writes).toBe(1);
+  const week = await (await request.get("/api/admin/availability/weekly")).json();
+  expect(week.days).toHaveLength(7);
+  expect(week.days[0].intervals).toEqual([
+    { start: "23:30", end: "24:00" },
+    { start: "00:00", end: "01:00" },
+    { start: "01:00", end: "01:01" },
+  ]);
+  expect(week.days[2].intervals).toEqual([{ start: "12:00", end: "13:00" }]);
+  await mondayRow.click();
+  await expect(editor.getByLabel("Начало интервала 1", { exact: true })).toHaveValue("23:30");
+});
+
+test("сводка контрольной недели и адаптивная композиция соответствуют макету", async ({
+  page,
+  request,
+}, testInfo) => {
+  await request.post("/api/admin/scheduling-settings/time-zone", {
+    data: { timeZone: "Europe/Moscow" },
+  });
+  await request.put("/api/admin/availability/weekly", {
+    data: {
+      days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(
+        (weekday, index) => ({
+          weekday,
+          isBlocked: index > 4,
+          intervals:
+            index > 4
+              ? []
+              : [
+                  { start: "09:00", end: "13:00" },
+                  { start: "14:00", end: index === 4 ? "17:00" : "18:00" },
+                ],
+        }),
+      ),
+    },
+  });
+  await page.goto("/admin/availability");
+  await expect(page.getByRole("button", { name: "Сохранить расписание" })).toHaveCSS(
+    "background-color",
+    "rgb(40, 99, 68)",
+  );
+  const summary = page.getByLabel("Рабочие часы обычной недели");
+  await expect(summary).toContainText("39 ч");
+  await expect(summary).toContainText("5 дн.");
+  await expect(
+    page.getByRole("region", { name: "Настройка конкретной даты" }).getByLabel("Правило для даты"),
+  ).toBeVisible();
+  for (const [width, height] of [
+    [1440, 900],
+    [390, 844],
+    [320, 900],
+    [768, 1024],
+    [820, 1180],
+    [1024, 768],
+  ]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
+      width,
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`availability-${width}.png`),
+      fullPage: true,
+    });
+  }
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(
+    await page
+      .getByRole("button", { name: /^Понедельник\./ })
+      .evaluate((el) => getComputedStyle(el).transitionDuration),
+  ).toBe("0s");
+});
+
+test("серверная ошибка другого дня открывает поле и длинный текст помещается на телефоне", async ({
+  page,
+  request,
+}, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await request.post("/api/admin/scheduling-settings/time-zone", { data: { timeZone: "UTC" } });
+  await request.put("/api/admin/availability/weekly", {
+    data: {
+      days: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(
+        (weekday) => ({ weekday, isBlocked: false, intervals: [{ start: "09:00", end: "18:00" }] }),
+      ),
+    },
+  });
+  await page.goto("/admin/availability");
+  await page.getByRole("button", { name: /^Среда\./ }).click();
+  const message = "Проверьте окончание интервала: " + "оченьдлинноепояснение".repeat(8);
+  await page.route("**/api/admin/availability/weekly", async (route) => {
+    await route.fulfill({
+      status: 422,
+      json: { code: "validation_error", fields: [{ field: "/days/0/intervals/0/end", message }] },
+    });
+  });
+  await page.getByRole("button", { name: "Сохранить расписание" }).click();
+  const monday = page.getByRole("group", { name: "Понедельник", exact: true });
+  const end = monday.getByLabel("Окончание интервала 1", { exact: true });
+  await expect(end).toBeFocused();
+  await expect(end).toHaveAttribute("aria-invalid", "true");
+  await expect(monday.getByText(message, { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  await page.screenshot({
+    path: testInfo.outputPath("availability-long-error-320.png"),
+    fullPage: true,
+  });
+});

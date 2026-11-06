@@ -1,26 +1,34 @@
-import { Button, Checkbox, Group, Stack, Text, TextInput, Title } from "@mantine/core";
+import { Button, Checkbox, Stack, Text, Title } from "@mantine/core";
 import { useMachine } from "@xstate/react";
 import { useEffect, useRef } from "react";
-import type { Weekday } from "../../api/generated";
+import type { WeeklyAvailability } from "../../api/generated";
+import { IntervalEditor } from "../../shared/availability/IntervalEditor";
 import { weeklyAvailabilityMachine } from "./model";
+import { dayNames, projectWeek } from "./projection";
+import { WeekGrid } from "./WeekGrid";
 
-const dayNames: Record<Weekday, string> = {
-  monday: "Понедельник",
-  tuesday: "Вторник",
-  wednesday: "Среда",
-  thursday: "Четверг",
-  friday: "Пятница",
-  saturday: "Суббота",
-  sunday: "Воскресенье",
+export type ConfirmedSchedule = {
+  timeZone: string;
+  week: WeeklyAvailability;
+  dirty: boolean;
+  outcomeUnknown: boolean;
 };
 
-export function Availability({ onTimeZoneReady }: { onTimeZoneReady: (zone: string) => void }) {
+export function Availability({
+  onScheduleChange,
+}: {
+  onScheduleChange: (schedule: ConfirmedSchedule) => void;
+}) {
   const [state, send] = useMachine(weeklyAvailabilityMachine);
   const formRef = useRef<HTMLFormElement>(null);
-  const { week, timeZone, errors } = state.context;
+  const { week, confirmedWeek, selectedDay, timeZone, errors, outcomeUnknown } = state.context;
+  const dirty = Boolean(
+    week && confirmedWeek && JSON.stringify(week) !== JSON.stringify(confirmedWeek),
+  );
   useEffect(() => {
-    if (timeZone) onTimeZoneReady(timeZone);
-  }, [timeZone, onTimeZoneReady]);
+    if (timeZone && confirmedWeek)
+      onScheduleChange({ timeZone, week: confirmedWeek, dirty, outcomeUnknown });
+  }, [timeZone, confirmedWeek, dirty, outcomeUnknown, onScheduleChange]);
   const saving = state.matches("saving");
   const success = state.matches({ editable: "saved" });
   const zoneError = state.matches("detectionFailed")
@@ -35,17 +43,25 @@ export function Availability({ onTimeZoneReady }: { onTimeZoneReady: (zone: stri
       : state.matches({ editable: "rejected" })
         ? "Не удалось сохранить расписание. Повторите сохранение."
         : state.matches({ editable: "unknown" })
-          ? "Не удалось получить результат сохранения. Повторите сохранение."
+          ? "Не удалось получить результат сохранения. Результат неизвестен. Повторите сохранение вручную."
           : "";
   useEffect(() => {
-    if (Object.keys(errors).length > 0 && !saving) {
+    if (Object.keys(errors).length > 0 && !saving)
       formRef.current?.querySelector<HTMLInputElement>('[aria-invalid="true"]')?.focus();
-    }
   }, [errors, saving]);
-
+  const day = week?.days[selectedDay];
+  const summary = week ? projectWeek(week).summary : null;
   return (
-    <Stack>
-      <Title order={2}>Доступность</Title>
+    <Stack gap="xl">
+      <div className="availability-intro">
+        <div>
+          <Title order={2} className="availability-title">
+            Время для встреч
+          </Title>
+          <Text c="dimmed">Настройте часы, в которые гости могут назначать встречи.</Text>
+        </div>
+        {timeZone && <Text className="availability-zone">Часовой пояс расписания: {timeZone}</Text>}
+      </div>
       {state.matches("loading") && <Text component="output">Загрузка доступности…</Text>}
       {state.matches("loadFailed") && (
         <Stack>
@@ -53,120 +69,126 @@ export function Availability({ onTimeZoneReady }: { onTimeZoneReady: (zone: stri
           <Button onClick={() => send({ type: "retryLoad" })}>Повторить</Button>
         </Stack>
       )}
-      {week && (
-        <Stack>
-          {timeZone ? (
-            <Text>Часовой пояс расписания: {timeZone}</Text>
-          ) : zoneError ? (
-            <Stack>
-              <Text role="alert">{zoneError}</Text>
-              <Button onClick={() => send({ type: "retryInitialization" })}>
-                Повторить сохранение пояса
-              </Button>
-            </Stack>
-          ) : (
-            <Text component="output">Сохранение часового пояса…</Text>
+      {week && day && (
+        <>
+          {!timeZone &&
+            (zoneError ? (
+              <Stack>
+                <Text role="alert">{zoneError}</Text>
+                <Button onClick={() => send({ type: "retryInitialization" })}>
+                  Повторить сохранение пояса
+                </Button>
+              </Stack>
+            ) : (
+              <Text component="output">Сохранение часового пояса…</Text>
+            ))}
+          <div className="availability-summary" aria-label="Рабочие часы обычной недели">
+            <div>
+              <Text className="availability-summary-number">{summary?.duration ?? "—"}</Text>
+              <Text size="sm" c="dimmed">
+                Рабочие часы обычной недели
+              </Text>
+            </div>
+            <div>
+              <Text className="availability-summary-number">
+                {summary ? `${summary.days} дн.` : "—"}
+              </Text>
+              <Text size="sm" c="dimmed">
+                Дней с рабочими часами
+              </Text>
+            </div>
+            {!summary && <Text size="sm">Проверьте интервалы, чтобы рассчитать рабочие часы</Text>}
+          </div>
+          {week.days.every((item) => item.intervals.length === 0) && (
+            <Text size="sm">Рабочие интервалы пока не заданы</Text>
           )}
-          {week.days.every((day) => day.intervals.length === 0) && (
-            <Text>Рабочие интервалы пока не заданы</Text>
-          )}
-          <Text>
-            Часы и блокировки относятся к местным дням в поясе расписания. Окончание 24:00 — конец
-            дня.
-          </Text>
-          <form
-            ref={formRef}
-            onSubmit={(event) => {
-              event.preventDefault();
-              send({ type: "saveRequested" });
-            }}
-            noValidate
-          >
-            <Stack>
+          <div className="availability-week-layout">
+            <WeekGrid
+              week={week}
+              selectedDay={selectedDay}
+              disabled={saving || !timeZone}
+              dirty={dirty}
+              timeZone={timeZone}
+              onSelect={(dayIndex) => send({ type: "daySelected", dayIndex })}
+            />
+            <form
+              className="availability-panel availability-editor"
+              ref={formRef}
+              noValidate
+              onSubmit={(event) => {
+                event.preventDefault();
+                send({ type: "saveRequested" });
+              }}
+            >
               <fieldset className="event-fields" disabled={saving || !timeZone}>
-                <Stack gap="lg">
-                  {week.days.map((day, index) => (
-                    <fieldset className="weekly-day" key={day.weekday}>
-                      <legend>{dayNames[day.weekday]}</legend>
-                      <Stack>
-                        <Checkbox
-                          label="День заблокирован"
-                          checked={day.isBlocked}
-                          onChange={(event) =>
-                            send({
-                              type: "dayBlocked",
-                              dayIndex: index,
-                              blocked: event.currentTarget.checked,
-                            })
-                          }
-                        />
-                        {day.intervals.map((interval, intervalIndex) => (
-                          <Group align="start" grow className="weekly-interval" key={intervalIndex}>
-                            <TextInput
-                              classNames={{ input: "weekly-clock" }}
-                              label={`Начало интервала ${intervalIndex + 1}`}
-                              placeholder="09:00"
-                              value={interval.start}
-                              error={errors[`/days/${index}/intervals/${intervalIndex}/start`]}
-                              onChange={(event) =>
-                                send({
-                                  type: "intervalChanged",
-                                  dayIndex: index,
-                                  intervalIndex,
-                                  values: {
-                                    start: event.currentTarget.value,
-                                  },
-                                })
-                              }
-                            />
-                            <TextInput
-                              classNames={{ input: "weekly-clock" }}
-                              label={`Окончание интервала ${intervalIndex + 1}`}
-                              placeholder="18:00"
-                              value={interval.end}
-                              error={errors[`/days/${index}/intervals/${intervalIndex}/end`]}
-                              onChange={(event) =>
-                                send({
-                                  type: "intervalChanged",
-                                  dayIndex: index,
-                                  intervalIndex,
-                                  values: { end: event.currentTarget.value },
-                                })
-                              }
-                            />
-                            <Button
-                              variant="subtle"
-                              aria-label={`Удалить интервал ${intervalIndex + 1}`}
-                              onClick={() =>
-                                send({ type: "intervalRemoved", dayIndex: index, intervalIndex })
-                              }
-                            >
-                              Удалить
-                            </Button>
-                          </Group>
-                        ))}
-                        <Button
-                          variant="light"
-                          onClick={() => send({ type: "intervalAdded", dayIndex: index })}
-                        >
-                          Добавить интервал
-                        </Button>
-                      </Stack>
-                    </fieldset>
-                  ))}
+                <div className="availability-panel-heading">
+                  <Text size="xs" c="green.8">
+                    Рабочие часы
+                  </Text>
+                  <Title order={3} id="selected-day-title" aria-live="polite">
+                    {dayNames[day.weekday]}
+                  </Title>
+                  <Text size="sm" c="dimmed">
+                    Повторяется каждую неделю
+                  </Text>
+                </div>
+                <Stack
+                  component="fieldset"
+                  className="event-fields availability-editor-body"
+                  gap="lg"
+                  aria-labelledby="selected-day-title"
+                >
+                  <Checkbox
+                    label="День заблокирован"
+                    checked={day.isBlocked}
+                    onChange={(event) =>
+                      send({
+                        type: "dayBlocked",
+                        dayIndex: selectedDay,
+                        blocked: event.currentTarget.checked,
+                      })
+                    }
+                  />
+                  {day.isBlocked && (
+                    <Text size="sm" c="dimmed">
+                      Часы сохранены, но день закрыт
+                    </Text>
+                  )}
+                  <IntervalEditor
+                    intervals={day.intervals}
+                    errors={errors}
+                    prefix={`/days/${selectedDay}/intervals`}
+                    onAdd={() => send({ type: "intervalAdded", dayIndex: selectedDay })}
+                    onRemove={(intervalIndex) =>
+                      send({ type: "intervalRemoved", dayIndex: selectedDay, intervalIndex })
+                    }
+                    onChange={(intervalIndex, values) =>
+                      send({
+                        type: "intervalChanged",
+                        dayIndex: selectedDay,
+                        intervalIndex,
+                        values,
+                      })
+                    }
+                  />
+                  <Text size="sm" c="dimmed">
+                    Промежутки между интервалами остаются недоступными для встреч. Окончание 24:00 —
+                    конец дня.
+                  </Text>
                   <Button type="submit">Сохранить расписание</Button>
                 </Stack>
               </fieldset>
-              {saving && <Text component="output">Сохранение расписания…</Text>}
-              {message &&
-                (success ? (
-                  <Text component="output">{message}</Text>
-                ) : (
-                  <Text role="alert">{message}</Text>
-                ))}
-            </Stack>
-          </form>
-        </Stack>
+              <div className="availability-result">
+                {saving && <Text component="output">Сохранение расписания…</Text>}
+                {message && (
+                  <Text component={success ? "output" : "p"} role={success ? undefined : "alert"}>
+                    {message}
+                  </Text>
+                )}
+              </div>
+            </form>
+          </div>
+        </>
       )}
     </Stack>
   );
