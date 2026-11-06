@@ -1,5 +1,6 @@
 import type { APIRequestContext } from "@playwright/test";
 import { expect, test } from "./fixtures";
+import { chooseBookingDate } from "./booking-calendar";
 
 async function prepare(request: APIRequestContext) {
   const events = [];
@@ -75,18 +76,22 @@ for (const [zone, offset, label] of [
       await expect(page.getByRole("heading", { name: "Шаг 2. Дата и время" })).toBeFocused();
       await expect(page.getByText(`Часовой пояс: ${zone}`, { exact: true })).toBeVisible();
       const date = new Date(Date.parse(start) + offset * 3_600_000).toISOString().slice(0, 10);
-      const dates = page.getByLabel("Дата", { exact: true });
-      const options = dates.locator("option");
-      await expect(options).toHaveCount(15);
       const firstDate = new Date(Date.parse(availability.windowStartsAt) + offset * 3_600_000)
         .toISOString()
         .slice(0, 10);
       const lastDate = new Date(Date.parse(availability.windowEndsAt) - 1 + offset * 3_600_000)
         .toISOString()
         .slice(0, 10);
-      await expect(options.first()).toHaveAttribute("value", firstDate);
-      await expect(options.last()).toHaveAttribute("value", lastDate);
-      await dates.selectOption(date);
+      // Every local date intersecting the UTC window remains selectable in the calendar.
+      const windowDate = new Date(`${firstDate}T12:00:00Z`);
+      let dateCount = 0;
+      while (windowDate.toISOString().slice(0, 10) <= lastDate) {
+        await chooseBookingDate(page, windowDate.toISOString().slice(0, 10));
+        dateCount++;
+        windowDate.setUTCDate(windowDate.getUTCDate() + 1);
+      }
+      expect(dateCount).toBe(15);
+      await chooseBookingDate(page, date);
       const slot = page.getByRole("radio", { name: label, exact: true });
       await slot.focus();
       await page.keyboard.press("Space");
@@ -100,7 +105,7 @@ for (const [zone, offset, label] of [
         320,
       );
       await page.screenshot({ path: testInfo.outputPath("calendar-320.png"), fullPage: true });
-      await page.getByRole("button", { name: "Назад к типам событий" }).click();
+      await page.getByRole("button", { name: "Изменить тип встречи" }).click();
       await expect(page.getByRole("heading", { name: "Шаг 1. Тип события" })).toBeFocused();
       await page.getByRole("radio", { name: "Короткая встреча", exact: true }).check();
       await page.getByRole("button", { name: "Выбрать время" }).click();
@@ -181,9 +186,7 @@ test("загрузка, пустое окно и пустая дата разл�
       200,
     );
     await page.getByRole("button", { name: "Обновить доступность" }).click();
-    await page
-      .getByLabel("Дата", { exact: true })
-      .selectOption(emptyDate.toISOString().slice(0, 10));
+    await chooseBookingDate(page, emptyDate.toISOString().slice(0, 10));
     await expect(
       page.getByText("На эту дату нет свободного времени", { exact: true }),
     ).toBeVisible();

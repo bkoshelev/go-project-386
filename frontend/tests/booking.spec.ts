@@ -1,5 +1,67 @@
 import { expect, test } from "./fixtures";
 import { prepareBooking, booking } from "./booking-fixtures";
+import { chooseBookingDate } from "./booking-calendar";
+
+test("боковая сводка показывает профиль и фактический тип только после перехода к времени", async ({
+  page,
+  request,
+}, testInfo) => {
+  await prepareBooking(request);
+  await page.goto("/book");
+  await expect(page.getByRole("heading", { name: "Встретимся в удобное время" })).toBeVisible();
+  const summary = page.getByRole("complementary", { name: "Сводка встречи" });
+  await expect(summary).toContainText("Александр Иванов");
+  await expect(summary).toContainText("Выберите тип события");
+  await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Выбрать время" })).toBeDisabled();
+  await page.getByRole("radio", { name: "Обсуждение", exact: true }).check();
+  await expect(summary).not.toContainText("Обсуждение");
+  await page.getByRole("button", { name: "Выбрать время" }).click();
+  await expect(summary).toContainText("Обсуждение");
+  await expect(summary).toContainText("30 мин");
+  await expect(page.getByRole("list", { name: "Этапы записи" })).toContainText("Дата и время");
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 1000 });
+    await page.screenshot({
+      path: testInfo.outputPath(`booking-design-${width}.png`),
+      fullPage: true,
+    });
+  }
+  await summary.getByRole("button", { name: "Изменить тип встречи" }).click();
+  await expect(summary).toContainText("Выберите тип события");
+});
+
+test("месячный календарь позволяет сменить дату и сбрасывает выбранный слот", async ({
+  page,
+  request,
+}) => {
+  const { start } = await prepareBooking(request);
+  await page.goto("/book");
+  await page.getByRole("radio", { name: "Обсуждение", exact: true }).check();
+  await page.getByRole("button", { name: "Выбрать время" }).click();
+  const date = new Date(start);
+  const dateName = new Intl.DateTimeFormat("ru-RU", { dateStyle: "full" }).format(date);
+  await chooseBookingDate(page, start.slice(0, 10));
+  await expect(page.getByRole("button", { name: dateName, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await page.getByRole("radio").first().check();
+  await expect(page.getByRole("button", { name: "Продолжить" })).toBeEnabled();
+  date.setDate(date.getDate() + 1);
+  const nextName = new Intl.DateTimeFormat("ru-RU", { dateStyle: "full" }).format(date);
+  await chooseBookingDate(page, date.toISOString().slice(0, 10));
+  await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Продолжить" })).toBeDisabled();
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Обновить доступность" }).click();
+  await expect(page.getByRole("button", { name: nextName, exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Продолжить" })).toBeDisabled();
+});
 
 test("гость проходит от главной до подтверждения с реальной записью при 320 px", async ({
   page,
@@ -11,7 +73,7 @@ test("гость проходит от главной до подтвержде�
   await page.getByRole("link", { name: "Записаться", exact: true }).click();
   await page.getByRole("radio", { name: "Обсуждение", exact: true }).check();
   await page.getByRole("button", { name: "Выбрать время" }).click();
-  await page.getByLabel("Дата", { exact: true }).selectOption(start.slice(0, 10));
+  await chooseBookingDate(page, start.slice(0, 10));
   await page.getByRole("radio").first().check();
   await page.getByRole("button", { name: "Продолжить" }).click();
   await expect(page.getByRole("heading", { name: "Шаг 3. Данные гостя" })).toBeFocused();
@@ -38,7 +100,11 @@ test("гость проходит от главной до подтвержде�
   );
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toBeFocused();
-  await expect(page.getByText("Обсуждение", { exact: true })).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Подтверждение встречи" })
+      .getByText("Обсуждение", { exact: true }),
+  ).toBeVisible();
   await expect(page.getByText(/Часовой пояс:/)).toBeVisible();
   await expect(page.getByText(/Начало:/)).toBeVisible();
   await expect(page.getByText(/Окончание:/)).toBeVisible();
@@ -58,12 +124,38 @@ async function contactStep(page: import("@playwright/test").Page, date: string) 
   await page.goto("/book");
   await page.getByRole("radio", { name: "Обсуждение", exact: true }).check();
   await page.getByRole("button", { name: "Выбрать время" }).click();
-  await page.getByLabel("Дата", { exact: true }).selectOption(date);
+  await chooseBookingDate(page, date);
   await page.getByRole("radio").first().check();
   await page.getByRole("button", { name: "Продолжить" }).click();
   await page.getByRole("textbox", { name: "Имя", exact: true }).fill("Анна");
   await page.getByRole("textbox", { name: "Email", exact: true }).fill("anna@example.com");
 }
+
+test("определённый отказ сохраняет форму и контакты без успеха при 320 px", async ({
+  page,
+  request,
+}) => {
+  const { start } = await prepareBooking(request);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await contactStep(page, start.slice(0, 10));
+  await page.route("**/api/bookings", async (route) => {
+    await route.fulfill({
+      status: 503,
+      json: { code: "service_unavailable", message: "Сервис временно недоступен" },
+    });
+  });
+  await page.getByRole("button", { name: "Забронировать" }).click();
+  await expect(page.getByRole("alert")).toBeFocused();
+  await expect(page.getByRole("alert")).toContainText("Не удалось сохранить бронирование");
+  await expect(page.getByRole("textbox", { name: "Имя", exact: true })).toHaveValue("Анна");
+  await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
+    "anna@example.com",
+  );
+  await expect(page.getByRole("button", { name: "Забронировать" })).toBeEnabled();
+  await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+  expect((await (await request.get("/api/admin/bookings")).json()).items).toHaveLength(0);
+});
 
 test("конфликт обновляет календарь, смена типа сбрасывает время и сохраняет контакты", async ({
   page,
@@ -102,7 +194,7 @@ test("конфликт обновляет календарь, смена тип�
   expect(
     refreshed.slots.some((slot: { startsAt: string }) => slot.startsAt === selectedStart),
   ).toBe(false);
-  await page.getByRole("button", { name: "Назад к типам событий" }).click();
+  await page.getByRole("button", { name: "Изменить тип встречи" }).click();
   await page.getByRole("radio", { name: "Короткая встреча", exact: true }).check();
   await page.getByRole("button", { name: "Выбрать время" }).click();
   await expect(page.getByRole("radio", { checked: true })).toHaveCount(0);

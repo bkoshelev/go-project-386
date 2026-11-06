@@ -22,7 +22,9 @@ test("владелец создаёт тип, гость читает его п�
   await guest.goto("/");
   await guest.getByRole("link", { name: "Записаться" }).click();
   await expect(
-    guest.getByRole("heading", { name: "Создать встречу с Александр Иванов" }),
+    guest
+      .getByRole("complementary", { name: "Сводка встречи" })
+      .getByText("Александр Иванов", { exact: true }),
   ).toBeVisible();
   await expect(guest.getByRole("heading", { name: "Шаг 1. Тип события" })).toBeFocused();
   await expect(guest.getByRole("radio", { name: /Обсуждение проекта/ })).toBeVisible();
@@ -160,7 +162,11 @@ test("сбой БД виден при чтении и записи, ручной
   expect(await (await request.get("/api/event-types")).json()).toEqual({ items: [] });
   await guest.getByRole("button", { name: "Повторить загрузку профиля" }).click();
   await guest.getByRole("button", { name: "Повторить", exact: true }).click();
-  await expect(guest.getByRole("heading", { name: /Создать встречу с/ })).toBeVisible();
+  await expect(
+    guest
+      .getByRole("complementary", { name: "Сводка встречи" })
+      .getByText("Александр Иванов", { exact: true }),
+  ).toBeVisible();
   await expect(guest.getByText("Пока нет доступных типов встреч")).toBeVisible();
   await admin.getByRole("button", { name: "Повторить", exact: true }).click();
   await expect(admin.getByText("Типов событий пока нет")).toBeVisible();
@@ -359,7 +365,9 @@ test("гость повторяет чтение каталога и профи�
   expect(ownerReads).toBe(1);
   await page.getByRole("button", { name: "Повторить загрузку профиля" }).click();
   await expect(
-    page.getByRole("heading", { name: "Создать встречу с Александр Иванов" }),
+    page
+      .getByRole("complementary", { name: "Сводка встречи" })
+      .getByText("Александр Иванов", { exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("radio", { name: "Выбор гостя" })).toBeChecked();
   expect(catalogReads).toBe(2);
@@ -417,7 +425,9 @@ for (const width of [320, 375, 768, 1440]) {
     });
     for (const path of ["/admin", "/book"]) {
       await page.goto(path);
-      await expect(page.getByRole("listitem")).toHaveCount(1);
+      await expect(
+        page.getByRole("list", { name: "Типы событий" }).getByRole("listitem"),
+      ).toHaveCount(1);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
         width,
       );

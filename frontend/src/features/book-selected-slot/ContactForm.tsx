@@ -41,6 +41,7 @@ export function ContactForm({
         <fieldset disabled={saving} className="event-fields">
           <Stack>
             <TextInput
+              classNames={{ input: "booking-contact-input" }}
               ref={name}
               label="Имя"
               required
@@ -50,6 +51,7 @@ export function ContactForm({
               onChange={(event) => onChange({ name: event.currentTarget.value })}
             />
             <TextInput
+              classNames={{ input: "booking-contact-input" }}
               ref={email}
               label="Email"
               required
@@ -59,12 +61,24 @@ export function ContactForm({
               error={errors.email}
               onChange={(event) => onChange({ email: event.currentTarget.value })}
             />
-            <Button type="submit" disabled={saving}>
-              Забронировать
-            </Button>
-            <Button variant="outline" onClick={onBack}>
-              Назад к времени
-            </Button>
+            <div className="booking-contact-actions">
+              <Button
+                className="booking-button"
+                classNames={{ label: "booking-button-label" }}
+                type="submit"
+                disabled={saving}
+              >
+                Забронировать
+              </Button>
+              <Button
+                className="booking-button"
+                classNames={{ label: "booking-button-label" }}
+                variant="outline"
+                onClick={onBack}
+              >
+                Назад к времени
+              </Button>
+            </div>
           </Stack>
         </fieldset>
         {saving && <Text component="output">Сохранение бронирования…</Text>}

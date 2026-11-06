@@ -11,7 +11,7 @@ export function MeetingSummary({
   endsAt: string;
 }) {
   return (
-    <Stack gap="xs">
+    <Stack gap="xs" className="booking-meeting-summary">
       <Text fw={600}>{name}</Text>
       <Text>Начало: {label.format(new Date(startsAt))}</Text>
       <Text>Окончание: {label.format(new Date(endsAt))}</Text>
