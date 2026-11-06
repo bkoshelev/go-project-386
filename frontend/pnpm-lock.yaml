@@ -215,6 +215,9 @@ importers:
       oxlint-tsgolint:
         specifier: 7.0.2001
         version: 7.0.2001
+      react-devtools-cdt-mcp:
+        specifier: 0.1.0
+        version: 0.1.0
       stylelint:
         specifier: 17.15.0
         version: 17.15.0(supports-color@10.2.2)(typescript@7.0.2)
@@ -1335,6 +1338,9 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
+  react-devtools-cdt-mcp@0.1.0:
+    resolution: {integrity: sha512-ruEhlMq+iTNl5uAIIUXfuKwbfLqADwE2BogM7mk7PtwE2FCTC5/rzu86YmWlCgKz5DjELre5AL6597y96/ziFQ==}
+
   react-dom@19.3.0:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
@@ -2373,6 +2379,8 @@ snapshots:
       hookified: 2.2.0
 
   queue-microtask@1.2.3: {}
+
+  react-devtools-cdt-mcp@0.1.0: {}
 
   react-dom@19.3.0(react@19.3.0):
     dependencies:

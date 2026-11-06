@@ -20,6 +20,10 @@ command = "npx"
 args = [
   "-y",
   "chrome-devtools-mcp@1.11.0",
+  # TODO(chrome-devtools-mcp): при обновлении проверить необходимость флага.
+  # Удалить, когда list_3p_developer_tools и execute_3p_developer_tool доступны
+  # по умолчанию; подтвердить вызовом React-инструмента без флага.
+  "--categoryExperimentalThirdParty=true",
   "--isolated",
   "--executablePath",
   "/Applications/Browsers/Google Chrome.app/Contents/MacOS/Google Chrome",
