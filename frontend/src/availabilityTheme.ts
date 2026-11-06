@@ -24,8 +24,7 @@ export const availabilityTheme = createTheme({
       "#203b30",
     ],
   },
-  fontFamily: '"Golos Text", sans-serif',
-  headings: { fontFamily: "Manrope, sans-serif", fontWeight: "600" },
+  headings: { fontWeight: "600" },
   components: {
     Button: Button.extend({
       classNames: { root: "availability-button", label: "availability-button-label" },
