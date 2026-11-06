@@ -4,10 +4,12 @@ import {
   Container,
   Divider,
   Group,
+  MantineProvider,
   Text,
   Title,
   type ContainerProps,
 } from "@mantine/core";
+import { availabilityCssVariables, availabilityTheme } from "./availabilityTheme";
 import { AvailabilityPage } from "./AvailabilityPage";
 import { Booking } from "./Booking";
 import { ManageEventTypes } from "./features/manage-event-types";
@@ -27,9 +29,9 @@ const pageContainerProps = {
   },
   "/admin/availability": {
     component: "main",
-    size: "md",
-    px: { base: "md", sm: "xl" },
-    py: { base: 64, sm: 96 },
+    size: 1440,
+    px: { base: 20, xs: 32, lg: 48 },
+    py: { base: 32, sm: 48 },
   },
   "/book": {
     component: "main",
@@ -51,10 +53,14 @@ export function App() {
       : path.startsWith("/book")
         ? "/book"
         : "/";
-  return (
+  const availability = path === "/admin/availability";
+  const content = (
     <>
       <header>
-        <Container size="md" px={{ base: "md", sm: "xl" }}>
+        <Container
+          size={availability ? 1440 : "md"}
+          px={availability ? { base: 20, xs: 32, lg: 48 } : { base: "md", sm: "xl" }}
+        >
           <Group justify="space-between" py={{ base: "lg", sm: "xl" }}>
             <Title order={1} fz={{ base: 20, sm: 24 }} miw={0}>
               Календарь встреч
@@ -75,7 +81,12 @@ export function App() {
 
       <Container {...pageContainerProps[page]}>
         {path.startsWith("/admin") && (
-          <Group component="nav" aria-label="Разделы администратора" mb="xl">
+          <Group
+            component="nav"
+            aria-label="Разделы администратора"
+            mb="xl"
+            className={availability ? "availability-navigation" : undefined}
+          >
             <Anchor href="/admin" aria-current={path === "/admin" ? "page" : undefined}>
               Типы событий
             </Anchor>
@@ -100,5 +111,19 @@ export function App() {
         )}
       </Container>
     </>
+  );
+  return availability ? (
+    <MantineProvider
+      forceColorScheme="light"
+      cssVariablesSelector=".availability-shell"
+      theme={availabilityTheme}
+      cssVariablesResolver={availabilityCssVariables}
+    >
+      <div className="availability-shell" data-mantine-color-scheme="light">
+        {content}
+      </div>
+    </MantineProvider>
+  ) : (
+    content
   );
 }

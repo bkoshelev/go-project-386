@@ -13,7 +13,26 @@ type DraftEvent =
       intervalIndex: number;
       values: Partial<AvailabilityTimeRange>;
     };
-type Context = { week: WeeklyAvailability | null; timeZone?: string; errors: FieldErrors };
+type Context = {
+  week: WeeklyAvailability | null;
+  confirmedWeek: WeeklyAvailability | null;
+  selectedDay: number;
+  timeZone?: string;
+  errors: FieldErrors;
+  outcomeUnknown: boolean;
+};
+
+function firstErrorDay(errors: FieldErrors, fallback: number) {
+  for (let day = 0; day < 7; day++) {
+    if (
+      Object.keys(errors).some(
+        (path) => path === `/days/${day}` || path.startsWith(`/days/${day}/`),
+      )
+    )
+      return day;
+  }
+  return fallback;
+}
 
 function editWeek(week: WeeklyAvailability, event: DraftEvent): WeeklyAvailability {
   return {
@@ -43,6 +62,7 @@ export const weeklyAvailabilityMachine = setup({
     context: {} as Context,
     events: {} as
       | DraftEvent
+      | { type: "daySelected"; dayIndex: number }
       | { type: "saveRequested" | "retryLoad" | "retryInitialization" | "cancel" },
   },
   actors: {
@@ -55,13 +75,15 @@ export const weeklyAvailabilityMachine = setup({
   actions: {
     edit: assign({
       week: ({ context, event }) =>
-        context.week && "dayIndex" in event ? editWeek(context.week, event) : context.week,
+        context.week && "dayIndex" in event && event.type !== "daySelected"
+          ? editWeek(context.week, event)
+          : context.week,
       errors: {},
     }),
   },
 }).createMachine({
   id: "weeklyAvailability",
-  context: { week: null, errors: {} },
+  context: { week: null, confirmedWeek: null, selectedDay: 0, errors: {}, outcomeUnknown: false },
   initial: "loading",
   on: { cancel: { target: ".cancelled" } },
   states: {
@@ -72,6 +94,7 @@ export const weeklyAvailabilityMachine = setup({
           target: "checkingTimeZone",
           actions: assign({
             week: ({ event }) => event.output.week,
+            confirmedWeek: ({ event }) => event.output.week,
             timeZone: ({ event }) => event.output.timeZone,
           }),
         },
@@ -116,6 +139,7 @@ export const weeklyAvailabilityMachine = setup({
     editable: {
       initial: "editing",
       on: {
+        daySelected: { actions: assign({ selectedDay: ({ event }) => event.dayIndex }) },
         dayBlocked: { target: ".editing", actions: "edit" },
         intervalAdded: { target: ".editing", actions: "edit" },
         intervalRemoved: { target: ".editing", actions: "edit" },
@@ -130,6 +154,9 @@ export const weeklyAvailabilityMachine = setup({
         {
           guard: ({ context }) => Object.keys(context.errors).length > 0,
           target: "editable.invalid",
+          actions: assign({
+            selectedDay: ({ context }) => firstErrorDay(context.errors, context.selectedDay),
+          }),
         },
         { target: "saving" },
       ],
@@ -146,6 +173,9 @@ export const weeklyAvailabilityMachine = setup({
             actions: assign({
               week: ({ context, event }) =>
                 event.output.kind === "saved" ? event.output.week : context.week,
+              confirmedWeek: ({ context, event }) =>
+                event.output.kind === "saved" ? event.output.week : context.confirmedWeek,
+              outcomeUnknown: false,
             }),
           },
           {
@@ -153,11 +183,15 @@ export const weeklyAvailabilityMachine = setup({
             target: "editable.rejected",
             actions: assign({
               errors: ({ event }) => (event.output.kind === "rejected" ? event.output.fields : {}),
+              selectedDay: ({ context, event }) =>
+                event.output.kind === "rejected"
+                  ? firstErrorDay(event.output.fields, context.selectedDay)
+                  : context.selectedDay,
             }),
           },
-          { target: "editable.unknown" },
+          { target: "editable.unknown", actions: assign({ outcomeUnknown: true }) },
         ],
-        onError: "editable.unknown",
+        onError: { target: "editable.unknown", actions: assign({ outcomeUnknown: true }) },
       },
     },
     cancelled: { type: "final" },

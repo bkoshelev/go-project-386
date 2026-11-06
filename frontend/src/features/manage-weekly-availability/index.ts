@@ -1,1 +1,1 @@
-export { Availability } from "./Availability";
+export { Availability, type ConfirmedSchedule } from "./Availability";
