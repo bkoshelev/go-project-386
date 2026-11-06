@@ -1,10 +1,10 @@
 import { assign, fromPromise, setup } from "xstate";
 import type { AvailabilityTimeRange, UpdateDateAvailabilityRequest } from "../../api/generated";
+import { validateIntervals } from "../../shared/availability/intervals";
 import { readDate, saveDate } from "./workflows";
 
 type DraftEvent =
-  | { type: "blocked"; value: boolean }
-  | { type: "custom"; value: boolean }
+  | { type: "modeChanged"; mode: "inherit" | "custom" | "blocked" }
   | { type: "add" }
   | { type: "remove"; index: number }
   | { type: "change"; index: number; values: Partial<AvailabilityTimeRange> };
@@ -19,10 +19,10 @@ function edit(
   event: DraftEvent,
 ): UpdateDateAvailabilityRequest {
   switch (event.type) {
-    case "blocked":
-      return { isBlocked: event.value };
-    case "custom":
-      return event.value ? { ...draft, intervals: [] } : { isBlocked: draft.isBlocked };
+    case "modeChanged":
+      return event.mode === "custom"
+        ? { isBlocked: false, intervals: [] }
+        : { isBlocked: event.mode === "blocked" };
     case "add":
       return { ...draft, intervals: [...(draft.intervals ?? []), { start: "", end: "" }] };
     case "remove":
@@ -104,15 +104,27 @@ export const dateAvailabilityMachine = setup({
     editable: {
       initial: "editing",
       on: {
-        blocked: { target: ".editing", actions: "edit" },
-        custom: { target: ".editing", actions: "edit" },
+        modeChanged: { target: ".editing", actions: "edit" },
         add: { target: ".editing", actions: "edit" },
         remove: { target: ".editing", actions: "edit" },
         change: { target: ".editing", actions: "edit" },
         reload: "loading",
-        save: "saving",
+        save: "validating",
       },
       states: { editing: {}, saved: {}, rejected: {}, unknown: {} },
+    },
+    validating: {
+      entry: assign({
+        errors: ({ context }) =>
+          context.draft?.intervals ? validateIntervals(context.draft.intervals, "/intervals") : {},
+      }),
+      always: [
+        {
+          guard: ({ context }) => Object.keys(context.errors).length > 0,
+          target: "editable.rejected",
+        },
+        { target: "saving" },
+      ],
     },
     saving: {
       on: { dateChanged: {} },

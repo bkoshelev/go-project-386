@@ -60,7 +60,7 @@ test("владелец заменяет часы даты, гость видит
     await guest.getByRole("button", { name: "Выбрать время" }).click();
     await guest.getByLabel("Дата", { exact: true }).selectOption(date);
     await expect(guest.getByRole("radio", { name: "09:00–10:00", exact: true })).toBeVisible();
-    await editor.getByLabel("Собственные интервалы").check();
+    await editor.getByLabel("Правило для даты").selectOption("custom");
     await expect(
       editor.getByText("Собственные рабочие интервалы не заданы", { exact: true }),
     ).toBeVisible();
@@ -78,30 +78,30 @@ test("владелец заменяет часы даты, гость видит
     await guest.getByRole("button", { name: "Обновить доступность" }).click();
     await expect(guest.getByRole("radio", { name: "09:00–10:00", exact: true })).toHaveCount(0);
     await expect(guest.getByRole("radio", { name: "12:00–13:00", exact: true })).toBeVisible();
-    await editor.getByLabel("Дата заблокирована").check();
+    await editor.getByLabel("Правило для даты").selectOption("blocked");
     await editor.getByRole("button", { name: "Сохранить настройку даты" }).click();
     await expect(editor.getByText("Настройка даты сохранена", { exact: true })).toBeVisible();
     await guest.getByRole("button", { name: "Обновить доступность" }).click();
     await expect(
       guest.getByText("На эту дату нет свободного времени", { exact: true }),
     ).toBeVisible();
-    await editor.getByLabel("Дата заблокирована").uncheck();
-    await expect(editor.getByLabel("Собственные интервалы")).not.toBeChecked();
+    await editor.getByLabel("Правило для даты").selectOption("inherit");
+    await expect(editor.getByLabel("Правило для даты")).toHaveValue("inherit");
     await editor.getByRole("button", { name: "Сохранить настройку даты" }).click();
     await expect(editor.getByText("Настройка даты сохранена", { exact: true })).toBeVisible();
     await guest.getByRole("button", { name: "Обновить доступность" }).click();
     await expect(guest.getByRole("radio", { name: "09:00–10:00", exact: true })).toBeVisible();
-    await editor.getByLabel("Дата заблокирована").focus();
+    await owner.bringToFront();
+    const rule = editor.getByLabel("Правило для даты");
+    await rule.focus();
+    expect(await rule.evaluate((el) => getComputedStyle(el).outlineStyle)).not.toBe("none");
+    await rule.selectOption("custom");
+    await rule.focus();
     await owner.keyboard.press("Tab");
-    await expect(editor.getByLabel("Собственные интервалы")).toBeFocused();
-    expect(
-      await editor
-        .getByLabel("Собственные интервалы")
-        .evaluate((el) => getComputedStyle(el).outlineStyle),
-    ).not.toBe("none");
-    await owner.keyboard.press("Space");
-    await expect(editor.getByLabel("Собственные интервалы")).toBeChecked();
-    await editor.getByRole("button", { name: "Сохранить настройку даты" }).click();
+    await expect(editor.getByRole("button", { name: "Добавить интервал даты" })).toBeFocused();
+    await owner.keyboard.press("Tab");
+    await expect(editor.getByRole("button", { name: "Сохранить настройку даты" })).toBeFocused();
+    await owner.keyboard.press("Enter");
     await expect(editor.getByText("Настройка даты сохранена", { exact: true })).toBeVisible();
     await guest.getByRole("button", { name: "Обновить доступность" }).click();
     await expect(
@@ -159,7 +159,7 @@ test("ошибка часов сохраняет ввод, потеря отве
   const editor = page.getByRole("region", { name: "Настройка конкретной даты" });
   await editor.getByLabel("Местная дата").fill(date);
   await expect(editor.getByText("Используются недельные интервалы", { exact: true })).toBeVisible();
-  await editor.getByLabel("Собственные интервалы").check();
+  await editor.getByLabel("Правило для даты").selectOption("custom");
   await editor.getByRole("button", { name: "Добавить интервал даты" }).click();
   const start = editor.getByLabel("Начало интервала 1", { exact: true });
   const end = editor.getByLabel("Окончание интервала 1", { exact: true });
@@ -210,4 +210,92 @@ test("ошибка часов сохраняет ввод, потеря отве
   await expect(editor.getByRole("alert")).toHaveCount(0);
   expect(writes).toBe(1);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
+});
+
+test("пояснение даты использует подтверждённую неделю и обновляется без потери черновика и ошибок", async ({
+  page,
+  request,
+}) => {
+  const date = await prepare(request);
+  await page.goto("/admin/availability");
+  const editor = page.getByRole("region", { name: "Настройка конкретной даты" });
+  await editor.getByLabel("Местная дата").fill(date);
+  await expect(editor.getByText(/09:00–18:00/)).toBeVisible();
+  const weekday = new Intl.DateTimeFormat("ru", { weekday: "long", timeZone: "UTC" }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
+  const name = weekday[0].toUpperCase() + weekday.slice(1);
+  await page.getByRole("button", { name: new RegExp(`^${name}\\.`) }).click();
+  const dayEditor = page.getByRole("group", { name, exact: true });
+  await dayEditor.getByLabel("Начало интервала 1", { exact: true }).fill("10:00");
+  await expect(editor.getByText(/09:00–18:00/)).toBeVisible();
+  await expect(editor.getByText(/Несохранённые изменения недели здесь не действуют/)).toBeVisible();
+  await editor.getByLabel("Правило для даты").selectOption("custom");
+  await editor.getByRole("button", { name: "Добавить интервал даты" }).click();
+  await editor.getByLabel("Начало интервала 1", { exact: true }).fill("12:00");
+  await editor.getByLabel("Окончание интервала 1", { exact: true }).fill("11:00");
+  await editor.getByRole("button", { name: "Сохранить настройку даты" }).click();
+  await expect(editor.getByRole("alert")).toHaveText("Проверьте интервалы даты");
+  await page.getByRole("button", { name: "Сохранить расписание" }).click();
+  await expect(page.getByText("Расписание сохранено", { exact: true })).toBeVisible();
+  await expect(editor.getByLabel("Местная дата")).toHaveValue(date);
+  await expect(editor.getByLabel("Начало интервала 1", { exact: true })).toHaveValue("12:00");
+  await expect(editor.getByLabel("Окончание интервала 1", { exact: true })).toHaveValue("11:00");
+  await expect(editor.getByRole("alert")).toHaveText("Проверьте интервалы даты");
+  await editor.getByLabel("Правило для даты").selectOption("inherit");
+  await expect(editor.getByText(/10:00–18:00/)).toBeVisible();
+  await dayEditor.getByRole("checkbox").check();
+  await expect(editor.getByText(/Этот день недели заблокирован/)).toHaveCount(0);
+  await page.getByRole("button", { name: "Сохранить расписание" }).click();
+  await expect(editor.getByText(/Этот день недели заблокирован/)).toBeVisible();
+});
+
+test("поздний ответ предыдущей даты не заменяет выбранную настройку", async ({ page, request }) => {
+  const date = await prepare(request);
+  const next = new Date(`${date}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  const nextDate = next.toISOString().slice(0, 10);
+  await request.put(`/api/admin/availability/dates/${nextDate}`, {
+    data: { isBlocked: false, intervals: [{ start: "12:00", end: "14:00" }] },
+  });
+  await page.goto("/admin/availability");
+  const editor = page.getByRole("region", { name: "Настройка конкретной даты" });
+  await expect(editor.getByLabel("Правило для даты")).toBeVisible();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const reached = page.waitForRequest(`**/api/admin/availability/dates/${date}`);
+  await page.route(`**/api/admin/availability/dates/${date}`, async (route) => {
+    const response = await route.fetch();
+    await gate;
+    await route.fulfill({ response });
+  });
+  await editor.getByLabel("Местная дата").fill(date);
+  await reached;
+  await editor.getByLabel("Местная дата").fill(nextDate);
+  await expect(editor.getByLabel("Начало интервала 1", { exact: true })).toHaveValue("12:00");
+  release();
+  await expect(editor.getByLabel("Местная дата")).toHaveValue(nextDate);
+  await expect(editor.getByLabel("Начало интервала 1", { exact: true })).toHaveValue("12:00");
+});
+
+test("начальная местная дата вычисляется в сохранённом поясе, когда браузер уже в следующем дне", async ({
+  browser,
+  backend,
+  request,
+}) => {
+  await request.post("/api/admin/scheduling-settings/time-zone", { data: { timeZone: "UTC" } });
+  const context = await browser.newContext({ baseURL: backend.url, timezoneId: "Asia/Tokyo" });
+  try {
+    const page = await context.newPage();
+    await page.clock.install({ time: new Date("2026-11-06T23:30:00Z") });
+    await page.goto("/admin/availability");
+    await expect(
+      page.getByRole("region", { name: "Настройка конкретной даты" }).getByLabel("Местная дата"),
+    ).toHaveValue("2026-11-06");
+    await expect(page.getByText("Часовой пояс расписания: UTC", { exact: true })).toBeVisible();
+  } finally {
+    await context.close();
+  }
 });
