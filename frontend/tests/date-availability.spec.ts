@@ -1,5 +1,6 @@
 import type { APIRequestContext } from "@playwright/test";
 import { expect, test } from "./fixtures";
+import { chooseBookingDate } from "./booking-calendar";
 
 async function prepare(request: APIRequestContext) {
   expect(
@@ -58,7 +59,7 @@ test("владелец заменяет часы даты, гость видит
     await guest.goto("/book");
     await guest.getByRole("radio", { name: "Обсуждение", exact: true }).check();
     await guest.getByRole("button", { name: "Выбрать время" }).click();
-    await guest.getByLabel("Дата", { exact: true }).selectOption(date);
+    await chooseBookingDate(guest, date);
     await expect(guest.getByRole("radio", { name: "09:00–10:00", exact: true })).toBeVisible();
     await editor.getByLabel("Собственные интервалы").check();
     await expect(

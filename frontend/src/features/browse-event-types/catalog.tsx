@@ -28,7 +28,12 @@ export function EventCatalog({
     return (
       <Stack align="flex-start">
         <Text role="alert">Не удалось загрузить типы событий</Text>
-        <Button variant="outline" onClick={reload}>
+        <Button
+          className="booking-button"
+          classNames={{ label: "booking-button-label" }}
+          variant="outline"
+          onClick={reload}
+        >
           Повторить
         </Button>
       </Stack>
@@ -41,7 +46,11 @@ export function EventCatalog({
         <Paper component="li" withBorder p="md" key={item.id}>
           <Stack gap="xs">
             {guest ? (
-              <Radio value={item.id} label={item.name} />
+              <Radio
+                value={item.id}
+                label={item.name}
+                classNames={{ label: "booking-radio-label" }}
+              />
             ) : (
               <Text fw={600}>{item.name}</Text>
             )}
@@ -58,7 +67,12 @@ export function EventCatalog({
         {items}
       </Radio.Group>
       {onContinue && (
-        <Button disabled={!selected} onClick={() => onContinue(selected)}>
+        <Button
+          className="booking-button"
+          classNames={{ label: "booking-button-label" }}
+          disabled={!selected}
+          onClick={() => onContinue(selected)}
+        >
           Выбрать время
         </Button>
       )}

@@ -33,9 +33,10 @@ const pageContainerProps = {
   },
   "/book": {
     component: "main",
-    size: "md",
-    px: { base: "md", sm: "xl" },
-    py: { base: 64, sm: 96 },
+    className: "booking-page",
+    size: 1184,
+    px: { base: 12, sm: 32 },
+    py: { base: 28, sm: 48 },
   },
 } satisfies Record<
   "/" | "/admin" | "/admin/availability" | "/book",

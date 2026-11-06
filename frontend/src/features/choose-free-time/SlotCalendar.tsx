@@ -1,9 +1,12 @@
-import { Button, NativeSelect, Radio, Stack, Text } from "@mantine/core";
+import { Button, Radio, Stack, Text, Title } from "@mantine/core";
+import { Calendar } from "@mantine/dates";
 import { useMachine } from "@xstate/react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import "dayjs/locale/ru";
 import type { AvailableSlot, EventType } from "../../api/generated";
 import { localDate, windowDates } from "./dates";
 import { freeTimeMachine } from "./model";
+import type { FreeTime } from "./workflows";
 
 const dateLabel = new Intl.DateTimeFormat("ru-RU", { dateStyle: "full" });
 const timeLabel = new Intl.DateTimeFormat("ru-RU", { hour: "2-digit", minute: "2-digit" });
@@ -17,10 +20,12 @@ const utcLabel = new Intl.DateTimeFormat("ru-RU", {
 export function SlotCalendar({
   eventTypeId,
   onMissing,
+  onEventLoaded,
   onContinue,
 }: {
   eventTypeId: string;
   onMissing: () => void;
+  onEventLoaded?: (event: EventType) => void;
   onContinue?: (selection: { event: EventType; slot: AvailableSlot }) => void;
 }) {
   const [state, send] = useMachine(freeTimeMachine, { input: { eventTypeId } });
@@ -30,58 +35,110 @@ export function SlotCalendar({
   useEffect(() => {
     if (state.matches("missing")) onMissing();
   }, [state, onMissing]);
+  const event = state.context.data?.event;
+  useEffect(() => {
+    if (event) onEventLoaded?.(event);
+  }, [event, onEventLoaded]);
   if (state.matches("loading")) return <Text component="output">Загрузка свободного времени…</Text>;
   if (state.matches("failed"))
     return (
       <Stack align="flex-start">
         <Text role="alert">Не удалось загрузить свободное время</Text>
-        <Button variant="outline" onClick={() => send({ type: "refresh" })}>
+        <Button
+          className="booking-button"
+          classNames={{ label: "booking-button-label" }}
+          variant="outline"
+          onClick={() => send({ type: "refresh" })}
+        >
           Повторить загрузку времени
         </Button>
       </Stack>
     );
   if (!state.matches("ready") || !state.context.data) return null;
-  const { event, availability } = state.context.data!;
+  return (
+    <TimePicker
+      data={state.context.data}
+      currentDate={state.context.date}
+      selected={state.context.selected}
+      onDateChange={(date) => send({ type: "dateChanged", date })}
+      onSlotChange={(startsAt) => send({ type: "slotSelected", startsAt })}
+      onRefresh={() => send({ type: "refresh" })}
+      onContinue={onContinue}
+    />
+  );
+}
+
+function TimePicker({
+  data: { event, availability },
+  currentDate,
+  selected,
+  onDateChange,
+  onSlotChange,
+  onRefresh,
+  onContinue,
+}: {
+  data: FreeTime;
+  currentDate: string;
+  selected: string;
+  onDateChange: (date: string) => void;
+  onSlotChange: (startsAt: string) => void;
+  onRefresh: () => void;
+  onContinue?: (selection: { event: EventType; slot: AvailableSlot }) => void;
+}) {
+  const [month, setMonth] = useState(currentDate);
   const dates = windowDates(availability);
-  const { date: currentDate, selected } = state.context;
+  const datesWithSlots = new Set(
+    availability.slots.map((slot) => localDate(new Date(slot.startsAt))),
+  );
   const slots = availability.slots.filter(
     (slot) => localDate(new Date(slot.startsAt)) === currentDate,
   );
   const chosen = slots.find((slot) => slot.startsAt === selected);
   return (
-    <Stack>
-      <Text fw={600}>
-        {event.name} · {event.durationMinutes} мин
-      </Text>
-      <Text>Часовой пояс: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text>
-      <Text c="dimmed">
-        Окно бронирования (UTC): {utcLabel.format(new Date(availability.windowStartsAt))} —{" "}
-        {utcLabel.format(new Date(availability.windowEndsAt))}
-      </Text>
-      {availability.slots.length === 0 ? (
-        <Text>В ближайшие 14 дней нет свободного времени</Text>
-      ) : (
-        <>
-          <NativeSelect
-            label="Дата"
-            value={currentDate}
-            onChange={(event) => {
-              send({ type: "dateChanged", date: event.currentTarget.value });
+    <Stack gap="lg">
+      <div className="booking-picker">
+        <section className="booking-month" aria-label="Дата встречи">
+          <Calendar
+            classNames={{
+              month: "booking-calendar-month",
+              calendarHeader: "booking-calendar-header",
+              day: "booking-calendar-day",
             }}
-            data={dates.map((value) => ({
-              value,
-              label: dateLabel.format(new Date(`${value}T12:00:00`)),
-            }))}
+            fullWidth
+            locale="ru"
+            firstDayOfWeek={1}
+            maxLevel="month"
+            hideOutsideDates
+            date={month}
+            onDateChange={setMonth}
+            minDate={dates[0]}
+            maxDate={dates[dates.length - 1]}
+            previousLabel="Предыдущий месяц"
+            nextLabel="Следующий месяц"
+            getDayAriaLabel={(date) => dateLabel.format(new Date(`${date}T12:00:00`))}
+            getDayProps={(date) => ({
+              selected: date === currentDate,
+              "aria-pressed": date === currentDate,
+              "aria-describedby": datesWithSlots.has(date) ? "booking-available-day" : undefined,
+              "data-has-slots": datesWithSlots.has(date) || undefined,
+              onClick: () => onDateChange(date),
+            })}
           />
-          {slots.length === 0 ? (
-            <Text>На эту дату нет свободного времени</Text>
+          <Text id="booking-available-day" className="booking-calendar-legend" size="sm">
+            <span aria-hidden="true">●</span> Есть свободное время
+          </Text>
+        </section>
+        <section className="booking-times" aria-label="Время встречи">
+          <Title order={4} className="booking-date-label">
+            {dateLabel.format(new Date(`${currentDate}T12:00:00`))}
+          </Title>
+          {availability.slots.length === 0 ? (
+            <Text component="output">В ближайшие 14 дней нет свободного времени</Text>
+          ) : slots.length === 0 ? (
+            <Text component="output">На эту дату нет свободного времени</Text>
           ) : (
-            <Radio.Group
-              label="Свободное время"
-              value={selected}
-              onChange={(startsAt) => send({ type: "slotSelected", startsAt })}
-            >
-              <Stack gap="sm" mt="xs">
+            <Radio.Group label="Свободное время" value={selected} onChange={onSlotChange}>
+              <div className="booking-slot-grid">
                 {slots.map((slot) => {
                   const start = new Date(slot.startsAt);
                   const end = new Date(slot.endsAt);
@@ -94,32 +151,56 @@ export function SlotCalendar({
                       key={slot.startsAt}
                       value={slot.startsAt}
                       label={`${timeLabel.format(start)}–${endLabel}`}
+                      className="booking-slot"
+                      classNames={{ label: "booking-radio-label" }}
                     />
                   );
                 })}
-              </Stack>
+              </div>
             </Radio.Group>
           )}
-        </>
-      )}
-      {chosen && (
-        <Text component="output">
-          Время выбрано: {instantLabel.format(new Date(chosen.startsAt))} —{" "}
-          {instantLabel.format(new Date(chosen.endsAt))}
+        </section>
+      </div>
+      <div className="booking-timezone">
+        <Text size="sm">Часовой пояс: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text>
+        <Text size="xs" c="dimmed">
+          Окно бронирования (UTC): {utcLabel.format(new Date(availability.windowStartsAt))} —{" "}
+          {utcLabel.format(new Date(availability.windowEndsAt))}
         </Text>
-      )}
-      {onContinue && (
-        <Button
-          disabled={!chosen}
-          onClick={() => {
-            if (chosen) onContinue({ event, slot: chosen });
-          }}
-        >
-          Продолжить
-        </Button>
-      )}
-      <Text c="dimmed">Выбор не резервирует время</Text>
-      <Button variant="outline" onClick={() => send({ type: "refresh" })}>
+      </div>
+      <div className="booking-selection-footer">
+        <div>
+          {chosen ? (
+            <Text component="output" className="booking-selected-time">
+              Время выбрано: {instantLabel.format(new Date(chosen.startsAt))} —{" "}
+              {instantLabel.format(new Date(chosen.endsAt))}
+            </Text>
+          ) : (
+            <Text size="sm">Выберите дату и свободное время</Text>
+          )}
+          <Text size="sm" c="dimmed">
+            Выбор не резервирует время
+          </Text>
+        </div>
+        {onContinue && (
+          <Button
+            className="booking-button"
+            classNames={{ label: "booking-button-label" }}
+            disabled={!chosen}
+            onClick={() => {
+              if (chosen) onContinue({ event, slot: chosen });
+            }}
+          >
+            Продолжить
+          </Button>
+        )}
+      </div>
+      <Button
+        className="booking-button booking-refresh"
+        classNames={{ label: "booking-button-label" }}
+        variant="subtle"
+        onClick={onRefresh}
+      >
         Обновить доступность
       </Button>
     </Stack>
