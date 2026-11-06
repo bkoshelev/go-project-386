@@ -228,6 +228,11 @@ make api-generate
 интерфейса запустите `pnpm dev` из `frontend/` и передайте агенту адрес,
 напечатанный Vite.
 
+Подключение React DevTools к агенту описано в
+[справочнике react-devtools-cdt-mcp](docs/agents/react-devtools-cdt-mcp.md):
+порядок загрузки в Vite, настройка MCP, инструменты инспекции и профилирования.
+Пакет подключён в development; сторонние инструменты Chrome DevTools MCP включены.
+
 Для записи демонстрации в MP4 явно вызовите
 [`$record-browser-video`](.agents/skills/record-browser-video/SKILL.md), например:
 `$record-browser-video запиши создание типа события и его выбор гостем`.

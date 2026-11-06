@@ -25,6 +25,12 @@ frontend и HTTP API с одного origin.
 
 ## Браузерная проверка
 
+Для инспекции дерева React, props, Hooks и рендеров агентом см.
+[документацию react-devtools-cdt-mcp](../docs/agents/react-devtools-cdt-mcp.md).
+Инструменты подключаются автоматически при `pnpm dev`, до загрузки React.
+В production-сборку они не входят. После изменения MCP-конфигурации перезапустите
+сессию Codex и вызовите `list_3p_developer_tools` на странице приложения.
+
 Нужны Go из [backend/go.mod](../backend/go.mod), доступный Docker, зависимости обоих
 пакетов и отдельно установленный Chromium. Подготовка браузера — в
 [инструкции установки](../README.md#фронтенд), запуск smoke — в
