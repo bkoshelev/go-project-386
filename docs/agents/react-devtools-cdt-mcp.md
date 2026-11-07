@@ -33,7 +33,7 @@ Chrome обнаруживает инструменты через событие
 ## Подключение к нашему Vite-приложению
 
 Интеграция уже настроена. После установки зависимостей запустите
-`pnpm --dir frontend dev` и откройте напечатанный адрес через Chrome DevTools MCP.
+`mise daemons start frontend` и откройте напечатанный адрес через Chrome DevTools MCP.
 После обновления `.codex/config.toml` перезапустите сессию Codex, чтобы появились
 `list_3p_developer_tools` и `execute_3p_developer_tool`.
 Ниже описаны установленные зависимости и порядок загрузки.
@@ -104,7 +104,7 @@ Bootstrap сочетает
 ### 4. Проверить подключение
 
 1. Подготовить зависимости и backend по [frontend README](../../frontend/README.md).
-2. Запустить `pnpm --dir frontend dev` и открыть через Chrome DevTools MCP адрес,
+2. Запустить `mise daemons start frontend` и открыть через Chrome DevTools MCP адрес,
    напечатанный Vite. Для данных приложения нужен работающий backend и PostgreSQL.
    Дождаться появления интерфейса через `wait_for`: обнаружение инструментов может
    завершиться до первого монтирования React.
@@ -114,8 +114,8 @@ Bootstrap сочетает
 5. Запустить проверки:
 
 ```bash
-pnpm --dir frontend check
-pnpm --dir frontend test:smoke
+mise run frontend:check
+mise run frontend:test-smoke
 ```
 
 `test:smoke` собирает production и проверяет приложение с настоящим backend и БД.

@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+env:
+  MISE_NO_HOOKS: "1"
+
 jobs:
   smoke:
     runs-on: ubuntu-latest
@@ -12,28 +15,19 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
+      - uses: jdx/mise-action@v5
         with:
-          version: 12.4.2
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: frontend/.nvmrc
-          cache: pnpm
-          cache-dependency-path: |
-            api/pnpm-lock.yaml
-            frontend/pnpm-lock.yaml
+          version: 2026.10.17
+          install_args: --locked node pnpm
 
       - name: Install frontend dependencies
-        run: pnpm --dir frontend install --frozen-lockfile
+        run: mise run frontend:deps
 
       - name: Verify preinstalled Google Chrome
         run: google-chrome --version
 
       - name: Test production image with external PostgreSQL
-        run: make test-container
+        run: mise run container:test
 
       - name: Upload diagnostics
         if: failure()

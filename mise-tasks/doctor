@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#MISE description="Read-only tool/version and hook launcher diagnostics"
+set -euo pipefail
+cd "${MISE_PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd -P)}"
+tools=(go node pnpm golangci-lint go:golang.org/x/vuln/cmd/govulncheck sqlc hk pitchfork rust conda:postgresql)
+mise ls --current "${tools[@]}"
+missing=$(mise ls --missing --no-header "${tools[@]}")
+if [[ -n "$missing" ]]; then
+  printf '[doctor] Missing tools; run mise run setup:\n%s\n' "$missing" >&2
+  exit 1
+fi
+expected_go=$(awk '$1 == "go" { print $2; exit }' backend/go.mod)
+[[ "$(go env GOVERSION)" == "go$expected_go" ]] || { echo '[doctor] Wrong Go version' >&2; exit 1; }
+[[ "$(node --version)" == "v$(tr -d '[:space:]' < frontend/.nvmrc)" ]] || { echo '[doctor] Wrong Node.js version' >&2; exit 1; }
+[[ "$(pnpm --version)" == "$(node -p 'JSON.parse(require("fs").readFileSync("frontend/package.json")).packageManager.split("@")[1]')" ]] || { echo '[doctor] Wrong pnpm version' >&2; exit 1; }
+[[ "$(go env CGO_ENABLED)" == 1 ]] || { echo '[doctor] Race tests require CGO_ENABLED=1 and a C compiler' >&2; exit 1; }
+read -r -a compiler <<< "$(go env CC)"
+command -v "${compiler[0]}" >/dev/null || { echo '[doctor] C compiler is missing' >&2; exit 1; }
+if [[ -z "${CI:-}" ]]; then
+  launcher=$(git rev-parse --git-path hooks/commit-msg)
+  [[ -x "$launcher" ]] && grep -q 'hk' "$launcher" || { echo '[doctor] commit-msg launcher is missing; run mise run setup' >&2; exit 1; }
+fi
+echo '[doctor] Tools and hook launcher are ready'

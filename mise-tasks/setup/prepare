@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+#MISE description="Repeatable dependency, API, Chromium and repository hook preparation"
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT"
+export MISE_NO_HOOKS=1
+trap 'status=$?; echo "[setup] Preparation failed at line $LINENO (exit $status)" >&2; exit "$status"' ERR
+case "${SETUP_VERIFY:-0}" in 0|1) ;; *) echo 'SETUP_VERIFY must be 0 or 1' >&2; exit 1 ;; esac
+mise run backend:deps
+mise run api:deps
+mise run frontend:deps
+mise run api:generate
+mise run frontend:browser
+mise run hooks:install

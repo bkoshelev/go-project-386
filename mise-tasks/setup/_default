@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+#MISE description="Install pinned tools, prepare this worktree and verify readiness"
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT"
+trap 'status=$?; echo "[setup] Failed at line $LINENO (exit $status)" >&2; exit "$status"' ERR
+case "${SETUP_VERIFY:-0}" in 0|1) ;; *) echo 'SETUP_VERIFY must be 0 or 1' >&2; exit 1 ;; esac
+case "$(uname -s)/$(uname -m)" in
+  Darwin/x86_64|Darwin/arm64|Linux/x86_64|Linux/amd64|Linux/arm64|Linux/aarch64) ;;
+  *) echo 'Supported platforms: macOS, Linux or WSL on amd64/arm64' >&2; exit 1 ;;
+esac
+# Explicit setup observes preparation errors, rather than postinstall warnings.
+# Exclude tools inherited from a parent configuration.
+export MISE_NO_HOOKS=1
+mise install go node pnpm golangci-lint go:golang.org/x/vuln/cmd/govulncheck sqlc hk pitchfork rust conda:postgresql
+# Re-enter so PATH contains newly installed binaries.
+mise run setup:prepare
+mise run doctor
+if [[ "${SETUP_VERIFY:-0}" == 1 ]]; then
+  mise run check
+fi
+echo '[setup] Workspace setup complete'

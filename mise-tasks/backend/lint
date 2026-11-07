@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+#MISE description="Check backend formatting, imports and linters without changing files"
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT/backend"
+golangci-lint config verify
+diff_file=$(mktemp)
+trap 'rm -f "$diff_file"' EXIT
+status=0
+golangci-lint fmt --diff > "$diff_file" || status=$?
+if [[ -s "$diff_file" ]]; then
+  cat "$diff_file"
+  echo 'Formatting differs; run mise run backend:fmt' >&2
+  exit 1
+fi
+[[ "$status" == 0 ]] || exit "$status"
+golangci-lint run

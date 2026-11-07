@@ -1,0 +1,23 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+env:
+  MISE_NO_HOOKS: "1"
+
+jobs:
+  conventional-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        with:
+          version: 2026.10.17
+          install_args: node rust hk
+      - name: Check title using the shared release policy
+        run: mise run commit:check -- --pr-event "$GITHUB_EVENT_PATH"

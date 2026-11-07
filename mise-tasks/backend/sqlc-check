@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+#MISE description="Verify generated database code without changing the worktree"
+set -euo pipefail
+root=$MISE_PROJECT_ROOT
+temp_dir=$(mktemp -d)
+trap 'rm -rf "$temp_dir"' EXIT
+mkdir -p "$temp_dir/internal/database"
+cp "$root/backend/sqlc.yaml" "$temp_dir/"
+cp -R "$root/backend/internal/database/migrations" "$root/backend/internal/database/queries" "$temp_dir/internal/database/"
+cd "$temp_dir"
+sqlc generate
+diff -ru "$root/backend/internal/database/db" "$temp_dir/internal/database/db"

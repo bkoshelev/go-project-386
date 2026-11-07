@@ -1,8 +1,290 @@
-# read_json используется для чтения packageManager без установленного Node.js.
-min_version = "2026.10.15"
+# Версия CLI также закреплена в bootstrap, CI и Dockerfile.
+min_version = "2026.10.17"
+
+[settings]
+experimental = true
+lockfile = true
+lockfile_platforms = ["linux-x64", "linux-arm64", "macos-x64", "macos-arm64"]
+task.run_auto_install = false
+cargo.binstall_native = true
+
+# Cargo использует официальные бинарники, а на macOS Intel собирает из исходников.
+# У hk и pitchfork нет готовых macOS Intel releases.
+[tool_alias.hk]
+backend = "cargo:hk"
+
+[tool_alias.pitchfork]
+backend = "cargo:pitchfork-cli"
 
 [tools]
-# Источники версий общие с Makefile и CI; отдельные номера здесь не дублируются.
+# Языковые файлы остаются единственными источниками версий runtimes.
 go = '''{{ exec(command="awk '$1 == \"go\" { print $2; exit }' backend/go.mod") }}'''
 node = "{{ read_file(path='frontend/.nvmrc') | trim }}"
 pnpm = "{{ read_json(path='frontend/package.json')['packageManager'] | split(pat='@') | last }}"
+golangci-lint = "2.13.2"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0"
+sqlc = "1.31.1"
+hk = "2.11.1"
+pitchfork = "2.33.1"
+rust = "1.95.0"
+"conda:postgresql" = "18.6"
+
+[env]
+# Сначала dotenv, затем обязательные ограничения toolchain: env-файл не отменяет их.
+_.file = { path = "{{ config_root }}/.env.local", optional = true }
+GOTOOLCHAIN = "local"
+RUSTUP_TOOLCHAIN = "1.95.0"
+
+[hooks]
+enter = 'if [ -z "${CI:-}" ]; then bash "{{ config_root }}/mise-tasks/doctor"; fi'
+postinstall = 'if [ -z "${CI:-}" ]; then mise run setup:prepare; fi'
+
+[daemons.postgres]
+preset = "postgres"
+version = "18.6"
+tool = "conda:postgresql"
+port = "auto"
+data_dir = ".data/postgres"
+options.database = "calendar"
+
+[daemons.backend]
+init = "mise run backend:dist"
+run = 'export HTTP_ADDR="127.0.0.1:$BACKEND_PORT"; exec backend/bin/server'
+port = { auto = true, base = 8080 }
+proxy = false
+depends = ["postgres"]
+ready_cmd = 'curl --fail --silent "http://127.0.0.1:$BACKEND_PORT/readyz"'
+ready_timeout = "120s"
+
+[daemons.frontend]
+init = "mise run api:generate"
+run = 'export VITE_BACKEND_URL="http://127.0.0.1:$BACKEND_PORT"; exec pnpm --dir frontend exec vite --host 127.0.0.1 --port "$FRONTEND_PORT" --strictPort'
+port = { auto = true, base = 5173 }
+proxy = false
+depends = ["backend"]
+ready_cmd = 'curl --fail --silent "http://127.0.0.1:$FRONTEND_PORT/"'
+ready_timeout = "120s"
+
+[daemon_groups]
+default = ["postgres", "backend", "frontend"]
+dev = ["default"]
+
+[tasks."backend:deps"]
+description = "Download backend modules"
+dir = "{{ config_root }}/backend"
+run = "go mod download"
+
+[tasks."api:deps"]
+description = "Install API tooling from lockfile"
+dir = "{{ config_root }}/api"
+run = "pnpm install --frozen-lockfile --prod=false"
+
+[tasks."frontend:deps"]
+description = "Install frontend dependencies from lockfile"
+dir = "{{ config_root }}/frontend"
+run = "pnpm install --frozen-lockfile --prod=false"
+
+[tasks."frontend:browser"]
+description = "Install Playwright Chromium"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec playwright install chromium"
+
+[tasks."frontend:browser-deps"]
+description = "Install Chromium system libraries on Linux (may need root)"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec playwright install-deps chromium"
+
+[tasks."api:build"]
+description = "Compile TypeSpec to OpenAPI"
+dir = "{{ config_root }}/api"
+run = "pnpm exec tsp compile ."
+
+[tasks."api:generate"]
+description = "Generate OpenAPI and Fetch client"
+dir = "{{ config_root }}/api"
+run = [{ task = "api:build" }, "pnpm exec openapi-ts"]
+
+[tasks."api:check"]
+description = "Check TypeSpec formatting and compilation"
+dir = "{{ config_root }}/api"
+run = [
+  'pnpm exec tsp format --check "**/*.tsp"',
+  "pnpm exec tsp compile . --no-emit",
+]
+
+[tasks."api:format"]
+description = "Format TypeSpec"
+dir = "{{ config_root }}/api"
+run = 'pnpm exec tsp format "**/*.tsp"'
+
+[tasks."backend:api-generate"]
+description = "Regenerate committed Go API models and routes"
+dir = "{{ config_root }}/backend"
+run = [
+  { task = "api:build" },
+  "go tool oapi-codegen --config oapi-models.yaml ../api/generated/openapi.yaml",
+  "go tool oapi-codegen --config oapi-server.yaml ../api/generated/openapi.yaml",
+]
+
+[tasks."backend:sqlc-generate"]
+description = "Regenerate committed Go database code"
+dir = "{{ config_root }}/backend"
+run = "sqlc generate"
+
+[tasks."backend:fmt"]
+description = "Apply gofmt and goimports"
+dir = "{{ config_root }}/backend"
+run = "golangci-lint fmt"
+
+[tasks."backend:lint-fix"]
+description = "Apply linter fixes and show the resulting diff"
+dir = "{{ config_root }}/backend"
+run = 'status=0; golangci-lint run --fix || status=$?; git diff -- .; exit "$status"'
+
+[tasks."backend:vet"]
+description = "Run go vet"
+dir = "{{ config_root }}/backend"
+run = "go vet ./..."
+
+[tasks."backend:test"]
+description = "Run all backend tests with race detector and real PostgreSQL (Docker required)"
+dir = "{{ config_root }}/backend"
+run = "go test -race -count=1 ./..."
+
+[tasks."backend:test-unit"]
+description = "Run backend unit tests without Docker"
+dir = "{{ config_root }}/backend"
+run = "go test -race -tags=unit ./..."
+
+[tasks."backend:build"]
+description = "Build all backend packages"
+dir = "{{ config_root }}/backend"
+run = "go build ./..."
+
+[tasks."backend:dist"]
+description = "Build production server and migration binaries"
+dir = "{{ config_root }}/backend"
+run = [
+  "go build -trimpath -o bin/server ./cmd/server",
+  "go build -trimpath -o bin/migrate ./cmd/migrate",
+]
+
+[tasks."backend:vuln"]
+description = "Check reachable Go vulnerabilities"
+dir = "{{ config_root }}/backend"
+run = "govulncheck ./..."
+
+[tasks."backend:check"]
+description = "Run every backend quality gate sequentially"
+run = [
+  { task = "backend:lint" },
+  { task = "backend:sqlc-check" },
+  { task = "backend:vet" },
+  { task = "backend:test" },
+  { task = "backend:build" },
+  { task = "backend:vuln" },
+]
+
+[tasks."backend:migrate-up"]
+description = "Apply migrations to explicitly selected DATABASE_URL"
+dir = "{{ config_root }}/backend"
+run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" up'
+
+[tasks."backend:migrate-down"]
+description = "Roll back one migration in DATABASE_URL"
+dir = "{{ config_root }}/backend"
+run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" down'
+
+[tasks."backend:migrate-status"]
+description = "Show migrations in DATABASE_URL"
+dir = "{{ config_root }}/backend"
+run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" status'
+
+[tasks."frontend:typecheck"]
+description = "Check TypeScript using the already generated API client"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec tsc -b"
+
+[tasks."frontend:build"]
+description = "Generate client, check TypeScript, build production assets"
+dir = "{{ config_root }}/frontend"
+run = [
+  { task = "api:generate" },
+  { task = "frontend:typecheck" },
+  "pnpm exec vite build",
+]
+
+[tasks."frontend:lint-code"]
+description = "Check JS/TS with type information"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec oxlint ."
+
+[tasks."frontend:lint-css"]
+description = "Check CSS without warnings"
+dir = "{{ config_root }}/frontend"
+run = 'pnpm exec stylelint "**/*.css" --max-warnings 0'
+
+[tasks."frontend:lint"]
+description = "Check frontend code and CSS"
+run = [{ task = "frontend:lint-code" }, { task = "frontend:lint-css" }]
+
+[tasks."frontend:lint-fix"]
+description = "Apply Oxlint and Stylelint fixes"
+dir = "{{ config_root }}/frontend"
+run = [
+  "pnpm exec oxlint . --fix",
+  'pnpm exec stylelint "**/*.css" --fix --max-warnings 0',
+]
+
+[tasks."frontend:format"]
+description = "Format frontend files with Oxfmt"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec oxfmt ."
+
+[tasks."frontend:format-check"]
+description = "Check frontend formatting"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec oxfmt --check ."
+
+[tasks."frontend:check"]
+description = "Check contract, regenerate client, lint and check formatting"
+run = [
+  { task = "api:check" },
+  { task = "api:generate" },
+  { task = "frontend:lint" },
+  { task = "frontend:format-check" },
+]
+
+[tasks."frontend:preview"]
+description = "Preview built frontend"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec vite preview"
+
+[tasks."frontend:test"]
+description = "Run Playwright tests against built assets; optional test file arguments"
+dir = "{{ config_root }}/frontend"
+run = "pnpm exec playwright test"
+
+[tasks."frontend:test-smoke"]
+description = "Build and run production browser smoke tests (Docker required)"
+run = [{ task = "frontend:build" }, { task = "frontend:test" }]
+
+[tasks."container:test"]
+description = "Build production image and test it with an isolated PostgreSQL"
+run = "python3 scripts/container-smoke.py"
+
+[tasks."hooks:install"]
+description = "Install repository-local commit-msg launcher through mise"
+run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --force-local; fi'
+
+[tasks.check]
+description = "Run backend and frontend quality, build and browser checks"
+run = [
+  { task = "backend:check" },
+  { task = "frontend:check" },
+  { task = "frontend:test-smoke" },
+]
+
+[tasks."workflow:test"]
+description = "Test development workflow command boundaries"
+run = "node --test scripts/tests/*.test.mjs"

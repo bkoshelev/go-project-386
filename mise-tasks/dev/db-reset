@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#MISE description="Stop this worktree stack and delete only its development PostgreSQL data"
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT"
+# Fixed path; refuse traversal through a symlink into another worktree.
+[[ ! -L .data && ! -L .data/postgres ]] || { echo 'Refusing to reset a symlinked data directory' >&2; exit 1; }
+mise daemons stop
+rm -rf -- "$MISE_PROJECT_ROOT/.data/postgres"
+echo 'Development database removed for this worktree; start postgres to initialize it again.'
