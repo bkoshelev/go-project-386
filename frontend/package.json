@@ -3,21 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "api:generate": "pnpm --dir ../api generate",
-    "dev": "pnpm api:generate && vite",
-    "build": "pnpm api:generate && tsc -b && vite build",
-    "typecheck": "tsc -b",
-    "check": "pnpm --dir ../api check && pnpm api:generate && pnpm lint && pnpm format:check",
-    "format": "oxfmt .",
-    "format:check": "oxfmt --check .",
-    "lint": "pnpm lint:code && pnpm lint:css",
-    "lint:code": "oxlint .",
-    "lint:css": "stylelint \"**/*.css\" --max-warnings 0",
-    "lint:fix": "oxlint . --fix && stylelint \"**/*.css\" --fix --max-warnings 0",
-    "preview": "vite preview",
-    "test:smoke": "pnpm build && playwright test"
-  },
   "dependencies": {
     "@mantine/core": "9.6.1",
     "@mantine/dates": "9.6.1",

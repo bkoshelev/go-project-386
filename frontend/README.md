@@ -27,7 +27,7 @@ frontend и HTTP API с одного origin.
 
 Для инспекции дерева React, props, Hooks и рендеров агентом см.
 [документацию react-devtools-cdt-mcp](../docs/agents/react-devtools-cdt-mcp.md).
-Инструменты подключаются автоматически при `pnpm dev`, до загрузки React.
+Инструменты подключаются автоматически при `mise daemons start frontend`, до загрузки React.
 В production-сборку они не входят. После изменения MCP-конфигурации перезапустите
 сессию Codex и вызовите `list_3p_developer_tools` на странице приложения.
 
@@ -101,25 +101,25 @@ PostgreSQL в Docker. Версия образа и жизненный цикл �
 ## Команды качества
 
 Каталог команд качества находится в [корневом README](../README.md#запуск-и-проверки-frontend),
-их определения — в [package.json](package.json). Исправления запускаются только явно:
+их определения — в [mise.toml](../mise.toml). Исправления запускаются только явно:
 lint и CI исходники не изменяют.
 
 ### Быстрая проверка типов
 
-Для короткого цикла между изменениями используйте `pnpm typecheck` из `frontend/`.
+Для короткого цикла между изменениями используйте `mise run frontend:typecheck` из `frontend/`.
 Сначала подготовьте зависимости **обоих** пакетов `api/` и `frontend/` по
 [инструкции установки](../README.md#фронтенд). В чистом checkout предварительно
 сгенерируйте клиент, затем повторяйте проверку типов:
 
 ```bash
-pnpm api:generate
-pnpm typecheck
+mise run api:generate
+mise run frontend:typecheck
 # После очередного изменения frontend
-pnpm typecheck
+mise run frontend:typecheck
 ```
 
 Выполняйте команды последовательно. После изменения контракта API снова запустите
-`pnpm api:generate` перед проверкой. `typecheck` использует уже сгенерированный клиент
+`mise run api:generate` перед проверкой. `typecheck` использует уже сгенерированный клиент
 и не гарантирует его свежесть относительно контракта.
 
 Команда выполняет `tsc -b`: через существующие references в `tsconfig.json` проверяет
@@ -128,8 +128,8 @@ pnpm typecheck
 JavaScript и декларации типов не создаются благодаря `noEmit`; компилятор может
 обновлять `.tsbuildinfo` в исключённом из Git `node_modules/.tmp/`.
 
-Быстрая проверка не заменяет `pnpm check`, production-сборку `pnpm build` и полный
-`pnpm test:smoke`; они сохраняют автоматическую генерацию клиента.
+Быстрая проверка не заменяет `mise run frontend:check`, production-сборку `mise run frontend:build` и полный
+`mise run frontend:test-smoke`; они сохраняют автоматическую генерацию клиента.
 
 ### Правила статических проверок
 
@@ -138,7 +138,7 @@ JavaScript и декларации типов не создаются благо
 подавлениях, которые больше не нужны.
 
 Для редактора можно установить расширения Oxlint, Oxfmt и Stylelint. Интеграция
-необязательна; источником истины остаётся `pnpm check`. Для Oxlint в редакторе
+необязательна; источником истины остаётся `mise run frontend:check`. Для Oxlint в редакторе
 нужно включить type-aware linting, как в `.oxlintrc.jsonc`.
 
 Oxlint выполняет статические проверки JSX-доступности. Они не знают семантику всех

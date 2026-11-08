@@ -98,7 +98,7 @@ go run ./cmd/migrate -dsn "$DATABASE_URL" status # из backend/
 ```bash
 pnpm --dir frontend install --frozen-lockfile
 pnpm --dir frontend exec playwright install chromium
-make test-container
+mise run container:test
 ```
 
 Команда собирает образ, создаёт чистую PostgreSQL 18.6 и запускает два
@@ -108,7 +108,7 @@ backend из страницы на том же origin, SPA и `404`, порт ч
 приоритет `HTTP_ADDR`, сохранность данных после перезапуска, потерю БД и
 восстановление readiness, SIGTERM после старта и во время подготовки.
 Ошибки конфигурации, миграций, ожидание блокировки и общий дедлайн дополнительно
-покрыты Go-тестами: `make test`.
+покрыты Go-тестами: `mise run backend:test`.
 
 Проверка всегда завершается ошибкой при недоступном Docker или невозможности
 запустить БД. При завершении, ошибке и SIGTERM/SIGINT удаляются её контейнеры,

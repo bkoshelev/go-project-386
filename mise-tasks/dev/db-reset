@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+#MISE description="Остановить стек текущего worktree и удалить только его данные PostgreSQL разработки (новая задача)"
+# Завершаем скрипт при ошибках команд, необъявленных переменных и сбоях конвейеров.
+set -euo pipefail
+# Переходим в корень текущего проекта для проверки относительных путей.
+cd "$MISE_PROJECT_ROOT"
+# Запрещаем удаление через символические ссылки, которые могут вести в другой worktree.
+[[ ! -L .data && ! -L .data/postgres ]] || { echo 'Refusing to reset a symlinked data directory' >&2; exit 1; }
+# Останавливаем управляемые mise сервисы текущего worktree перед удалением данных.
+mise daemons stop
+# Удаляем только каталог данных PostgreSQL разработки текущего worktree.
+rm -rf -- "$MISE_PROJECT_ROOT/.data/postgres"
+# Сообщаем об удалении БД и способе её повторной инициализации.
+echo 'Development database removed for this worktree; start postgres to initialize it again.'

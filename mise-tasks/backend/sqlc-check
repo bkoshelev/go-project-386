@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#MISE description="Проверить актуальность Go-кода БД без изменения рабочего дерева (из Makefile: sqlc-check)"
+# Завершаем скрипт при ошибках команд, необъявленных переменных и сбоях конвейеров.
+set -euo pipefail
+# Сохраняем корень проекта для обращения к исходникам после смены каталога.
+root=$MISE_PROJECT_ROOT
+# Создаём отдельный временный каталог для генерации.
+temp_dir=$(mktemp -d)
+# Удаляем временный каталог при любом завершении скрипта.
+trap 'rm -rf "$temp_dir"' EXIT
+# Создаём структуру каталогов, ожидаемую конфигурацией sqlc.
+mkdir -p "$temp_dir/internal/database"
+# Копируем конфигурацию генератора во временный каталог.
+cp "$root/backend/sqlc.yaml" "$temp_dir/"
+# Копируем миграции и SQL-запросы с сохранением их относительных путей.
+cp -R "$root/backend/internal/database/migrations" "$root/backend/internal/database/queries" "$temp_dir/internal/database/"
+# Переходим в каталог изолированной генерации.
+cd "$temp_dir"
+# Генерируем Go-код БД из скопированных миграций и запросов.
+sqlc generate
+# Сравниваем результат с кодом проекта; различия приводят к ненулевому коду возврата.
+diff -ru "$root/backend/internal/database/db" "$temp_dir/internal/database/db"

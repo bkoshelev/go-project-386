@@ -10,4 +10,6 @@ backend/bin/
 .mcp-output/
 artifacts/
 .env.local
-.direnv/
+/.data/
+/mise.local.toml
+/mise.local.lock

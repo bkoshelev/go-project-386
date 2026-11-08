@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+#MISE description="Проверить инструменты и Git hook без изменений (проверки версий из scripts/setup-worktree.sh; проверка hook новая)"
+# Завершаем скрипт при ошибках команд, необъявленных переменных и сбоях конвейеров.
+set -euo pipefail
+# Переходим в корень проекта из окружения mise либо определяем его по пути скрипта при прямом вызове hook.
+cd "${MISE_PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd -P)}"
+# Ограничиваем диагностику инструментами проекта, исключая инструменты родительских конфигураций.
+tools=(go node pnpm golangci-lint go:golang.org/x/vuln/cmd/govulncheck sqlc hk pitchfork rust conda:postgresql)
+# Показываем версии инструментов, выбранные текущей конфигурацией mise.
+mise ls --current "${tools[@]}"
+# Получаем список отсутствующих установок без заголовка таблицы.
+missing=$(mise ls --missing --no-header "${tools[@]}")
+# Проверяем, остались ли неустановленные инструменты.
+if [[ -n "$missing" ]]; then
+  # Перечисляем отсутствующие инструменты и подсказываем команду подготовки.
+  printf '[doctor] Missing tools; run mise run setup:\n%s\n' "$missing" >&2
+  # Завершаем диагностику с ошибкой при неполном окружении.
+  exit 1
+# Завершаем ветку обработки отсутствующих инструментов.
+fi
+# Читаем версию из go.mod для проверки её согласованности с выбранным mise Go.
+expected_go=$(awk '$1 == "go" { print $2; exit }' backend/go.mod)
+# Требуем точного совпадения активного Go с версией, объявленной в модуле.
+[[ "$(go env GOVERSION)" == "go$expected_go" ]] || { echo '[doctor] Wrong Go version' >&2; exit 1; }
+# Проверяем согласованность выбранного mise Node.js с декларацией в .nvmrc.
+[[ "$(node --version)" == "v$(tr -d '[:space:]' < frontend/.nvmrc)" ]] || { echo '[doctor] Wrong Node.js version' >&2; exit 1; }
+# Проверяем согласованность выбранного mise pnpm с packageManager клиентского пакета.
+[[ "$(pnpm --version)" == "$(node -p 'JSON.parse(require("fs").readFileSync("frontend/package.json")).packageManager.split("@")[1]')" ]] || { echo '[doctor] Wrong pnpm version' >&2; exit 1; }
+# Требуем включённый cgo, необходимый серверным тестам с детектором гонок.
+[[ "$(go env CGO_ENABLED)" == 1 ]] || { echo '[doctor] Race tests require CGO_ENABLED=1 and a C compiler' >&2; exit 1; }
+# Разбираем команду C-компилятора Go на имя программы и её аргументы.
+read -r -a compiler <<< "$(go env CC)"
+# Проверяем доступность исполняемого файла C-компилятора в PATH.
+command -v "${compiler[0]}" >/dev/null || { echo '[doctor] C compiler is missing' >&2; exit 1; }
+# В локальном окружении дополнительно проверяем Git hook; в CI он не устанавливается.
+if [[ -z "${CI:-}" ]]; then
+  # Определяем путь к commit-msg hook с учётом устройства Git worktree.
+  launcher=$(git rev-parse --git-path hooks/commit-msg)
+  # Требуем исполняемый launcher с вызовом hk, иначе предлагаем повторить подготовку.
+  [[ -x "$launcher" ]] && grep -q 'hk' "$launcher" || { echo '[doctor] commit-msg launcher is missing; run mise run setup' >&2; exit 1; }
+# Завершаем локальную проверку Git hook.
+fi
+# Сообщаем об успешном завершении диагностики.
+echo '[doctor] Tools and hook launcher are ready'

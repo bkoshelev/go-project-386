@@ -10,3 +10,6 @@ frontend/*report
 frontend/test-results
 **/.env*
 artifacts
+.data
+mise.local.toml
+mise.local.lock

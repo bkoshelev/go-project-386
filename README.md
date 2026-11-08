@@ -27,86 +27,83 @@ git clone https://github.com/bkoshelev/go-project-386.git
 cd go-project-386
 ```
 
-### Локальное окружение: mise и direnv
+### Локальное окружение: mise
 
-[Mise](https://mise.jdx.dev/getting-started.html) устанавливает Go, Node.js и pnpm,
-а [direnv](https://direnv.net/) загружает локальные переменные текущего worktree.
-Нужен mise не ниже 2026.10.15; проверена работа с direnv 2.38.2.
-Оба инструмента устанавливаются на машине заранее. На macOS с Homebrew:
-
-```bash
-brew install mise direnv
-```
-
-Для Linux и WSL используйте официальные инструкции установки
-[mise](https://mise.jdx.dev/installing-mise.html) и
-[direnv](https://direnv.net/docs/installation.html). Команды `mise` и `direnv`
-должны быть доступны в `PATH` процесса Orca.
-
-Первоначальная подготовка из корня репозитория:
+Установите [mise](https://mise.jdx.dev/installing-mise.html) **2026.10.17**
+и добавьте его в `PATH` терминала и Orca. На macOS можно установить mise через
+Homebrew; для Linux/WSL доступен официальный installer:
 
 ```bash
-ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
+curl -fsSL https://mise.run | MISE_VERSION=2026.10.17 sh
 ```
 
-Setup разрешает конфигурации `.envrc` и `mise.toml` текущего worktree,
-устанавливает нужные версии инструментов, зависимости и Chromium.
-Корневой [mise.toml](mise.toml) читает версию Go из [backend/go.mod](backend/go.mod),
-Node.js — из [frontend/.nvmrc](frontend/.nvmrc), pnpm — из поля `packageManager`
-в [frontend/package.json](frontend/package.json). Makefile и CI используют
-те же источники версий. Backend-инструменты по-прежнему устанавливаются
-через `make tools` в `backend/bin/tools/`.
+Поддерживаются macOS и Linux на amd64/arm64, Windows через WSL. Для тестов
+с `-race` нужен C-компилятор; для полных тестов — Docker с Linux-контейнерами.
+На macOS Intel hk и pitchfork собираются из исходников: mise установит закреплённый
+Rust, первая подготовка занимает несколько минут. На других платформах Cargo backend
+использует официальные бинарники, когда они доступны.
 
-Для необязательных локальных настроек скопируйте `.env.local.example`
-в `.env.local`. Этот файл исключён из Git, свой у каждого worktree
-и загружается через `.envrc`; отсутствие файла допустимо. Например,
-`HTTP_ADDR=127.0.0.1:8081` задаёт другой порт backend. `DATABASE_URL` обязателен
-для запуска backend и нужен для явных команд миграций; временная БД
-интеграционных тестов его не использует.
-Env-файлы не копируются между worktree; порты локального dev-запуска выбираются вручную.
-
-Для ручных команд используйте явное окружение, например из корня:
+Подготовка без shell activation:
 
 ```bash
-direnv exec . mise exec go node pnpm -- make test-unit
-direnv exec . mise exec go node pnpm -- pnpm --dir frontend dev
-direnv exec . mise exec go node pnpm -- make migrate-status
+mise trust mise.toml
+mise run setup
+# Повторная подготовка и полный набор backend/frontend-проверок
+SETUP_VERIFY=1 mise run setup
 ```
 
-Эти команды предполагают выполненный setup. Shell hooks не требуются.
-При ручной подготовке вместо setup сначала выполните `direnv allow .`,
-`mise trust mise.toml` и `direnv exec . mise install go node pnpm`.
-После изменения `.envrc` снова разрешите его или повторите setup.
-Для автоматической загрузки переменных в интерактивном терминале можно отдельно
-настроить [hook direnv](https://direnv.net/docs/hook.html).
+Setup устанавливает инструменты, Go-модули, зависимости обоих пакетов, генерирует
+API-клиент, устанавливает Chromium и локальный `commit-msg` hook. Он проверяет
+результат и возвращает ошибку при сбое. `SETUP_VERIFY` принимает только `0` и `1`.
+`mise install` также запускает повторяемую подготовку через `postinstall`.
+Сервисы запускаются только явно.
 
-Mise используется через CLI для выбора инструментов, direnv — для переменных.
-Интеграция `use mise` не используется: текущая документация mise объявляет
-совместную работу shell hooks неподдерживаемой, а эту интеграцию — устаревшей.
-Раздельный CLI-сценарий проверяется в проекте.
-Подробнее — [спецификация окружения](specs/local-development-environment.md).
+[mise.toml](mise.toml) — источник команд и явно заданных точных версий инструментов,
+включая Go, Node.js и pnpm. Длинные сценарии находятся в [mise-tasks/](mise-tasks/),
+версии и доступные метаданные установок — в [mise.lock](mise.lock).
+При обновлении Go, Node.js или pnpm согласованно обновляйте `mise.toml`,
+`backend/go.mod`, `frontend/.nvmrc` и декларации `engines`/`packageManager`
+в `api/package.json` и `frontend/package.json`, затем выполняйте `mise lock go node pnpm`.
+`doctor` сверяет выбранные mise инструменты с `go.mod`, `.nvmrc` и `packageManager`
+frontend. `GOTOOLCHAIN=local` запрещает смену Go toolchain.
+Для source backends lockfile закрепляет версии, сборка Cargo использует Cargo.lock
+самого инструмента; `--locked` mise доступен для backends с URL в lockfile.
+Зависимости приложений остаются в языковых lock-файлах.
+
+Необязательный `.env.local` загружается mise только из текущего worktree; пример —
+[.env.local.example](.env.local.example). Он не копируется между worktree и исключён
+из Git, как `.data/` и `mise.local.toml`. Direnv не требуется. Dev-сервисы получают
+подключение БД и порты автоматически; явный `DATABASE_URL` в `.env.local` переопределит
+подключение для ручных задач, поэтому не задавайте его для обычного dev-стека.
+
+Для автоматической лёгкой диагностики при входе в каталог добавьте в `.zshrc`
+`eval "$(mise activate zsh)"` (для Bash — `mise activate bash`). Hook `enter`
+проверяет инструменты и launcher, ничего не устанавливает и не запускает сервисы.
+Все задачи и Git hook работают без активации shell. Диагностика вручную:
+`mise run doctor`. Список задач: `mise tasks ls`.
+
+Git hook проверяет Conventional Commits без изменения сообщения; допустимые типы
+читаются из `release-please-config.json`. Устанавливается только `commit-msg`
+в общий каталог hooks репозитория, глобальный Git config не изменяется.
+В CI заголовок PR проверяется той же задачей в строгом режиме, включая переименование.
+Подробности решения — [спецификация](specs/mise-development-workflow.md).
 
 ### Фронтенд
 
-Версии Node.js и pnpm выбирайте по источникам, указанным в
-[настройке окружения](#локальное-окружение-mise-и-direnv).
-
-После общего setup зависимости и Chromium уже установлены. Для отдельной
-подготовки только фронтенда можно использовать существующее окружение nvm:
+После общего setup зависимости API/frontend и Chromium готовы. Для отдельной
+подготовки после установки mise:
 
 ```bash
-cd frontend
-nvm install
-nvm use
-corepack enable
-corepack prepare "$(node -p 'require("./package.json").packageManager')" --activate
-pnpm --dir ../api install --frozen-lockfile
-pnpm install --frozen-lockfile
-pnpm exec playwright install chromium
+MISE_NO_HOOKS=1 mise install --locked node pnpm
+mise run api:deps
+mise run frontend:deps
+mise run api:generate
+mise run frontend:browser
 ```
 
-Chromium устанавливается отдельно один раз при подготовке окружения. После
-обновления Playwright установку браузера может потребоваться повторить.
+На Linux системные библиотеки Chromium устанавливаются отдельно:
+`mise run frontend:browser-deps` (может потребовать прав администратора).
+После обновления Playwright повторите установку браузера.
 
 ### Контракт API и клиент
 
@@ -121,19 +118,19 @@ SDK и Fetch-клиент в `frontend/src/api/generated/`. Версии инс�
 
 ```bash
 # Проверить контракт и его форматирование
-pnpm --dir api check
+mise run api:check
 
 # Сгенерировать OpenAPI и клиент
-pnpm --dir frontend api:generate
+mise run api:generate
 
 # Отформатировать TypeSpec после редактирования
-pnpm --dir api format
+mise run api:format
 ```
 
-`pnpm dev`, `pnpm build` и `pnpm check` во фронтенде автоматически запускают
+`mise daemons start frontend`, `mise run frontend:build` и `mise run frontend:check` во фронтенде автоматически запускают
 генерацию. После изменения контракта при работающем Vite выполните
-`pnpm api:generate` ещё раз. Каталоги `generated/` исключены из Git; их содержимое
-пересоздаётся из TypeSpec, править его вручную не нужно. `pnpm check` также
+`mise run api:generate` ещё раз. Каталоги `generated/` исключены из Git; их содержимое
+пересоздаётся из TypeSpec, править его вручную не нужно. `mise run frontend:check` также
 проверяет контракт, а сборка проверяет типы сгенерированного клиента.
 
 Контракт описывает все операции бронирования. К серверу подключены liveness
@@ -165,7 +162,7 @@ TypeScript 7. Поэтому в отдельном пакете `api/` закр�
 зависимости `api/`):
 
 ```bash
-make api-generate
+mise run backend:api-generate
 ```
 
 Команда заново компилирует TypeSpec и запускает закреплённый в `backend/go.mod`
@@ -177,7 +174,7 @@ make api-generate
 
 Результат в `backend/internal/api/*.gen.go` хранится в Git; вручную его не меняют.
 Отдельная задача CI повторяет генерацию и проверяет отсутствие изменений.
-Обычные `go build`, `go test` и `make check` используют сохранённый Go-код,
+Обычные `go build`, `go test` и `mise run backend:check` используют сохранённый Go-код,
 не запускают генерацию и не требуют Node.js или frontend.
 
 В `backend/internal/httpserver/` проверка запросов выполняется до generated binding:
@@ -225,7 +222,7 @@ make api-generate
 Браузерные серверы используют временные изолированные профили. У Chrome DevTools
 отключена отправка статистики использования. Автоматические артефакты Playwright
 попадают в `.mcp-output/playwright/` и исключены из Git. Для проверки локального
-интерфейса запустите `pnpm dev` из `frontend/` и передайте агенту адрес,
+интерфейса запустите `mise daemons start frontend` из `frontend/` и передайте агенту адрес,
 напечатанный Vite.
 
 Подключение React DevTools к агенту описано в
@@ -241,133 +238,104 @@ make api-generate
 
 ### Бэкенд
 
-Для бэкенда нужна точная версия Go из [backend/go.mod](backend/go.mod); она
-используется локальными Go-командами и GitHub Actions. Автоматическое переключение
-на другой toolchain отключено в Makefile и backend CI, поэтому нужную версию Go необходимо
-установить и выбрать заранее.
-
-Для воспроизводимых проверок также нужны `make`, Unix shell, `curl`, `tar` и
-`sha256sum` либо `shasum`. Поддерживаются macOS и Linux на amd64/arm64, а Windows —
-через WSL. Первоначальная установка инструментов выполняется из корня репозитория:
+Для подготовки только backend без клиентского окружения:
 
 ```bash
-make tools
+MISE_NO_HOOKS=1 mise install go golangci-lint go:golang.org/x/vuln/cmd/govulncheck sqlc
+mise run backend:deps
 ```
 
-Если нужный Go установлен отдельно, его можно указать явно для любой цели:
-
-```bash
-make GO=/path/to/go/bin/go check
-```
-
-Команда устанавливает golangci-lint, govulncheck и sqlc версий из [Makefile](Makefile)
-только в `backend/bin/tools/`. Она проверяет версию Go и SHA-256 официального архива
-golangci-lint, не использует одноимённые программы из `PATH` и не изменяет
-системную установку. Версии обновляются только явным изменением Makefile с
-последующей проверкой совместимости.
-
-Зависимости приложения по-прежнему подготавливаются прямой командой из
-`backend/`:
-
-```bash
-cd backend
-go mod download
-```
+Служебные инструменты устанавливает mise; ручная загрузка архивов не требуется.
+Версии меняются в `mise.toml`, затем обновляется `mise.lock`.
 
 ### Подготовка worktree в Orca
 
-В поле **Setup Script** укажите:
+В поле **Setup Script** сохранён прежний вход:
 
 ```bash
 bash "$ORCA_WORKTREE_PATH/scripts/setup-worktree.sh"
 ```
 
-Скрипт загружает переменные через direnv, устанавливает Go, Node.js и pnpm
-через mise, проверяет закреплённые версии, скачивает Go-модули,
-устанавливает backend-инструменты, зависимости API и фронтенда вместе с
-devDependencies, генерирует API-клиент и устанавливает Chromium для Playwright.
-Повторный запуск допускается; backend-инструменты
-нужных версий повторно не устанавливаются. Скрипт должен присутствовать в ветке,
-из которой создаётся worktree.
-
-Заранее установите mise и direnv, как описано выше. Setup автоматически разрешает
-конфигурации текущего worktree и использует `direnv exec` и `mise exec`,
-поэтому настройки интерактивного shell, nvm и пользовательский каталог Go SDK
-не требуются. Для первоначальной установки инструментов нужен доступ к сети.
-Также нужны утилиты для `make tools` и C-компилятор, указанный в `go env CC`;
-`CGO_ENABLED` должен быть равен `1` для тестов с детектором гонок. Отдельную
-установку Go можно указать через `GO=/absolute/path/to/go`.
-На Linux системные библиотеки Chromium нужно предварительно установить командой
-`pnpm exec playwright install-deps chromium` из `frontend/`; она может потребовать
-прав администратора.
-
-Для запуска проверок после установки добавьте `SETUP_VERIFY=1`:
-
-```bash
-SETUP_VERIFY=1 bash "$ORCA_WORKTREE_PATH/scripts/setup-worktree.sh"
-```
-
-Этот режим выполняет `make check`, `pnpm check` и `pnpm test:smoke`.
-Smoke-тест использует Docker и автоматически выбирает локальные порты для
-собственных PostgreSQL и backend. Ошибки установки или проверок завершают
-скрипт с ненулевым кодом и сообщением о текущем этапе.
-
-Для ручного запуска из корня репозитория:
+Bootstrap нормализует путь, автоматически доверяет конфигурации именно текущего
+worktree и вызывает `mise run setup`. Mise должен быть доступен в `PATH` Orca;
+интерактивные shell hooks и direnv не нужны. Повторный запуск допустим.
 
 ```bash
 ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
+SETUP_VERIFY=1 ORCA_WORKTREE_PATH="$PWD" bash scripts/setup-worktree.sh
 ```
 
-`ORCA_WORKSPACE_NAME` используется в сообщении о начале подготовки.
-`ORCA_ROOT_PATH` пока не требуется: env-файлы не копируются, SQL-миграции
-встроены в команду миграций и применяются только к явно указанной БД.
+`SETUP_VERIFY=1` выполняет backend quality gates, frontend quality/build/smoke
+и требует Docker. Ошибка подготовки или проверок завершает setup неуспешно.
 
 ## Использование
 
-<!-- Добавьте примеры запуска и запись asciinema — именно это смотрит работодатель -->
+Dev-стек управляется штатными экспериментальными [mise daemons](https://mise.jdx.dev/daemons.html)
+с закреплённым pitchfork как внутренней зависимостью. Вход/выход из каталога не
+запускает и не останавливает сервисы.
 
-После [подготовки окружения](#установка) запустите PostgreSQL и backend по
-[инструкции ниже](#бэкенд-1), затем frontend. Команды предполагают выбранные
-инструменты и переменные; для ручного запуска через mise/direnv используйте
-[явное окружение](#локальное-окружение-mise-и-direnv).
+```bash
+mise daemons start             # весь стек (группа default)
+mise daemons start postgres    # только БД
+mise daemons start backend     # БД → backend, ожидание /readyz
+mise daemons start frontend    # БД → backend → frontend
+mise daemons restart frontend
+mise daemons status
+mise daemons ls --json         # порты, процессы, пути данных
+mise daemons logs backend -n 50
+mise daemons stop frontend
+mise daemons stop              # весь стек текущего worktree
+mise run dev:db-reset          # остановить стек и удалить dev-БД текущего worktree
+```
+
+Порты выделяются штатным `port = auto` по пути worktree; идентификаторы процессов
+также раздельные. Адреса смотрите в `mise daemons ls --json`. Frontend слушает
+`127.0.0.1:<frontend port>` и проксирует API к backend своего worktree через
+`VITE_BACKEND_URL`. При занятом порте запуск завершается ошибкой, чужой процесс
+не останавливается. Для редкого конфликта переопределите **всю** декларацию нужного
+сервиса в gitignored `mise.local.toml`, задав другой `port`, и перезапустите его.
+
+Нативная PostgreSQL 18 хранит данные в `.data/postgres` каждого worktree; остановка
+сохраняет их. `dev:db-reset` удаляет только эту dev-БД, без перезапуска.
+Временные PostgreSQL/процессы тестов и production Compose управляются отдельно.
 
 ### Запуск и проверки frontend
 
-Все команды фронтенда выполняются из папки `frontend/`:
+Команды доступны из любого каталога внутри проекта:
 
 ```bash
 # Сервер разработки
-pnpm dev
+mise daemons start frontend
 
 # Линтеры, форматирование и проверка контракта
-pnpm check
+mise run frontend:check
 
 # Проверка TypeScript и production-сборка
-pnpm build
+mise run frontend:build
 
 # Сборка и smoke-тест production-версии в Chromium
-pnpm test:smoke
+mise run frontend:test-smoke
 ```
 
-Для короткого цикла между изменениями используйте `pnpm typecheck` после
+Для короткого цикла между изменениями используйте `mise run frontend:typecheck` после
 [подготовки клиента](frontend/README.md#быстрая-проверка-типов).
 
-Для разработки `pnpm dev` проксирует API к backend согласно
+Для разработки `mise daemons start frontend` проксирует API к backend согласно
 [frontend/vite.config.ts](frontend/vite.config.ts).
 Интеграционный smoke выбирает свободные порты через fixtures; фиксированный порт
 для него не требуется. Требования и жизненный цикл окружения описаны в
 [инструкции браузерной проверки](frontend/README.md#браузерная-проверка).
 
-Дополнительные команды качества определены в [frontend/package.json](frontend/package.json):
+Дополнительные команды качества определены в [mise.toml](mise.toml):
 
 | Команда             | Назначение                                                |
 | ------------------- | --------------------------------------------------------- |
-| `pnpm lint:code`    | Проверить JS, TS, JSX и TSX с анализом типов              |
-| `pnpm lint:css`     | Проверить обычные CSS-файлы                               |
-| `pnpm lint`         | Последовательно выполнить обе lint-проверки               |
-| `pnpm lint:fix`     | Применить безопасные автоисправления Oxlint и Stylelint   |
-| `pnpm format`       | Отформатировать поддерживаемые frontend-файлы через Oxfmt |
-| `pnpm format:check` | Проверить форматирование без изменения файлов             |
+| `mise run frontend:lint-code`    | Проверить JS, TS, JSX и TSX с анализом типов              |
+| `mise run frontend:lint-css`     | Проверить обычные CSS-файлы                               |
+| `mise run frontend:lint`         | Последовательно выполнить обе lint-проверки               |
+| `mise run frontend:lint-fix`     | Применить безопасные автоисправления Oxlint и Stylelint   |
+| `mise run frontend:format`       | Отформатировать поддерживаемые frontend-файлы через Oxfmt |
+| `mise run frontend:format-check` | Проверить форматирование без изменения файлов             |
 
 Исправления запускаются только явно; lint и CI исходники не изменяют.
 Настройки форматирования принадлежат [Oxfmt config](frontend/.oxfmtrc.jsonc).
@@ -376,36 +344,36 @@ pnpm test:smoke
 
 ### Бэкенд
 
-Корневые make-цели в этом репозитории пока относятся только к backend:
+Backend-команды имеют префикс `backend:`. `mise run check` проверяет оба приложения:
 
 ```bash
 # Установить или переустановить закреплённые инструменты
-make tools
+MISE_NO_HOOKS=1 mise install go golangci-lint go:golang.org/x/vuln/cmd/govulncheck sqlc
 
 # Проверить конфигурацию, форматирование, импорты и линтеры без изменения файлов
-make lint
+mise run backend:lint
 
 # Применить gofmt и goimports
-make fmt
+mise run backend:fmt
 
 # Применить доступные автоисправления линтеров и вывести diff для просмотра
-make lint-fix
+mise run backend:lint-fix
 
 # Проверить вызываемые известные уязвимости
-make vuln
+mise run backend:vuln
 
 # Все тесты, включая PostgreSQL в Docker, с детектором гонок
-make test
+mise run backend:test
 
 # Тесты без Docker, также с детектором гонок
-make test-unit
+mise run backend:test-unit
 
 # Выполнить lint, проверку генерации, vet, race-тесты, сборку и проверку уязвимостей
-make check
+mise run backend:check
 ```
 
-`make lint` никогда не исправляет файлы. Изменяющие команды `make fmt` и
-`make lint-fix` запускаются только явно; после них необходимо просмотреть diff.
+`mise run backend:lint` никогда не исправляет файлы. Изменяющие команды `mise run backend:fmt` и
+`mise run backend:lint-fix` запускаются только явно; после них необходимо просмотреть diff.
 Обычные Go-команды остаются доступны и выполняются из папки `backend/`:
 
 ```bash
@@ -480,12 +448,12 @@ HTTP-сервер подключается к БД и применяет миг�
 [ADR-0008](docs/adr/0008-backend-liveness-endpoint.md), а `/readyz` отдельно
 проверяет доступность БД. Порядок запуска описан в
 [ADR-0016](docs/adr/0016-migrations-at-container-startup.md).
-Для полного `make test` и `make check` требуется работающий Docker Engine
+Для полного `mise run backend:test` и `mise run backend:check` требуется работающий Docker Engine
 или Docker Desktop с Linux-контейнерами и доступом к Docker Hub при первой
 загрузке образов. В CI используется Docker на GitHub Actions Ubuntu runner.
 Недоступность Docker, ошибка запуска БД или очистки завершают тесты ошибкой.
 Полный запуск использует `-count=1`, чтобы кэш Go не подменял проверку реальной БД.
-`make test-unit` исключает интеграционный пакет тегом `unit` и работает без Docker.
+`mise run backend:test-unit` исключает интеграционный пакет тегом `unit` и работает без Docker.
 Подготовка Orca с `SETUP_VERIFY=1` также требует Docker.
 
 Testcontainers запускает один `postgres:18.6-alpine` на интеграционный пакет,
@@ -519,16 +487,16 @@ Go-пакет `backend/internal/database/db/` генерируется sqlc из
 
 ```bash
 # Установить только закреплённый sqlc, если остальные инструменты уже готовы
-make tools-sqlc
+MISE_NO_HOOKS=1 mise install sqlc
 
 # Обновить Go-код и включить результат в коммит
-make sqlc-generate
+mise run backend:sqlc-generate
 
 # Проверить актуальность генерации без изменения рабочего дерева
-make sqlc-check
+mise run backend:sqlc-check
 ```
 
-Генерация и её проверка выполняются без Docker и запущенной БД. `make check`
+Генерация и её проверка выполняются без Docker и запущенной БД. `mise run backend:check`
 и backend CI включают проверку генерации; она обнаруживает изменённые,
 отсутствующие и лишние файлы.
 
@@ -539,9 +507,9 @@ SQL-файлы. Для ручного применения нужна заран
 
 ```bash
 export DATABASE_URL='postgres://user:password@localhost:5432/database?sslmode=disable'
-make migrate-status
-make migrate-up
-make migrate-down # Откатить последнюю применённую миграцию
+mise run backend:migrate-status
+mise run backend:migrate-up
+mise run backend:migrate-down # Откатить последнюю применённую миграцию
 
 # Та же команда напрямую из backend/; флаг должен предшествовать операции
 go run ./cmd/migrate -dsn "$DATABASE_URL" status
@@ -565,7 +533,7 @@ docker compose up --build -d
 
 Приложение: <http://127.0.0.1:8080>, готовность с проверкой БД: `/readyz`.
 Миграции применяются автоматически до HTTP; `DATABASE_URL` обязателен
-также при прямом запуске backend. Контейнерная проверка: `make test-container`.
+также при прямом запуске backend. Контейнерная проверка: `mise run container:test`.
 
 Конфигурация, сохранение данных, отдельная команда миграций, smoke и настройки
 Render описаны в [инструкции запуска](docs/runbooks/production-environment.md).

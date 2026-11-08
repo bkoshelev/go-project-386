@@ -1,0 +1,13 @@
+amends "package://github.com/jdx/hk/releases/download/v2.11.1/hk@2.11.1#/Config.pkl"
+
+hooks {
+  ["commit-msg"] {
+    steps {
+      ["conventional-commit"] {
+        check = new Command {
+          argv = List("mise", "run", "commit:check", "--", "{{commit_msg_file}}")
+        }
+      }
+    }
+  }
+}

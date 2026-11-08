@@ -3,12 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "scripts": {
-    "build": "tsp compile .",
-    "generate": "pnpm build && openapi-ts",
-    "check": "tsp format --check \"**/*.tsp\" && tsp compile . --no-emit",
-    "format": "tsp format \"**/*.tsp\""
-  },
   "devDependencies": {
     "@hey-api/openapi-ts": "0.99.0",
     "@typespec/compiler": "1.17.0",

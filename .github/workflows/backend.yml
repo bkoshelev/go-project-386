@@ -4,93 +4,54 @@ on:
   push:
   pull_request:
 
-# Проверки должны использовать установленный из go.mod Go без автоматической смены toolchain.
 env:
+  MISE_NO_HOOKS: "1"
   GOTOOLCHAIN: local
 
 jobs:
   checks:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Verify pinned Go version
-        run: make check-go-version
-        working-directory: ${{ github.workspace }}
-
+          version: 2026.10.17
+          install_args: go sqlc
       - name: Download dependencies
-        run: go mod download
-
-      - name: Install pinned sqlc
-        run: make tools-sqlc
-        working-directory: ${{ github.workspace }}
-
+        run: mise run backend:deps
       - name: Verify generated database code
-        run: make sqlc-check
-        working-directory: ${{ github.workspace }}
-
+        run: mise run backend:sqlc-check
       - name: Verify Docker is available
         run: docker info
-
       - name: Run go vet
-        run: go vet ./...
-
+        run: mise run backend:vet
       - name: Run tests with race detector
-        run: make test
-        working-directory: ${{ github.workspace }}
-
+        run: mise run backend:test
       - name: Build packages
-        run: go build ./...
+        run: mise run backend:build
 
   lint:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Install pinned backend tools
-        run: make tools
-        working-directory: ${{ github.workspace }}
-
+          version: 2026.10.17
+          install_args: go golangci-lint
+      - name: Download dependencies
+        run: mise run backend:deps
       - name: Run backend linters
-        run: make lint
-        working-directory: ${{ github.workspace }}
+        run: mise run backend:lint
 
   govulncheck:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
         with:
-          go-version-file: backend/go.mod
-          cache-dependency-path: backend/go.sum
-
-      - name: Install pinned backend tools
-        run: make tools
-        working-directory: ${{ github.workspace }}
-
-      - name: Scan backend for known vulnerabilities
-        run: make vuln
-        working-directory: ${{ github.workspace }}
+          version: 2026.10.17
+          install_args: go go:golang.org/x/vuln/cmd/govulncheck
+      - name: Download dependencies
+        run: mise run backend:deps
+      - name: Scan reachable vulnerabilities
+        run: mise run backend:vuln
