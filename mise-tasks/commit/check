@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
-#MISE description="Validate a commit message file or --pr-event GitHub event with the release policy"
+#MISE description="Проверить сообщение коммита или событие --pr-event по правилам релизов (новая задача)"
+# Завершаем скрипт при ошибках команд, необъявленных переменных и сбоях конвейеров.
 set -euo pipefail
+# Заменяем оболочку валидатором Node.js, передавая все аргументы и сохраняя его код возврата.
 exec node "$MISE_PROJECT_ROOT/scripts/check-commit-message.mjs" "$@"

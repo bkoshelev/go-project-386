@@ -1,13 +1,24 @@
 #!/usr/bin/env bash
-#MISE description="Repeatable dependency, API, Chromium and repository hook preparation"
+#MISE description="Подготовить зависимости, API, Chromium и Git hook (установка и генерация из scripts/setup-worktree.sh; Git hook новый)"
+# Завершаем скрипт при ошибках команд, необъявленных переменных и сбоях конвейеров.
 set -euo pipefail
+# Переходим в корень текущего проекта.
 cd "$MISE_PROJECT_ROOT"
+# Отключаем hooks вложенных вызовов mise, чтобы подготовка не запускала сама себя.
 export MISE_NO_HOOKS=1
+# При ошибке выводим номер строки и завершаем подготовку с исходным кодом возврата.
 trap 'status=$?; echo "[setup] Preparation failed at line $LINENO (exit $status)" >&2; exit "$status"' ERR
+# Проверяем допустимость режима дополнительных проверок и при прямом вызове подготовки.
 case "${SETUP_VERIFY:-0}" in 0|1) ;; *) echo 'SETUP_VERIFY must be 0 or 1' >&2; exit 1 ;; esac
+# Загружаем зависимости серверного Go-модуля.
 mise run backend:deps
+# Устанавливаем инструменты контракта API по lock-файлу.
 mise run api:deps
+# Устанавливаем зависимости frontend по lock-файлу.
 mise run frontend:deps
+# Генерируем OpenAPI и Fetch-клиент из TypeSpec.
 mise run api:generate
+# Устанавливаем Chromium для браузерных проверок Playwright.
 mise run frontend:browser
+# Устанавливаем локальный commit-msg hook репозитория через hk.
 mise run hooks:install

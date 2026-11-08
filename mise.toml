@@ -17,10 +17,10 @@ backend = "cargo:hk"
 backend = "cargo:pitchfork-cli"
 
 [tools]
-# Языковые файлы остаются единственными источниками версий runtimes.
-go = '''{{ exec(command="awk '$1 == \"go\" { print $2; exit }' backend/go.mod") }}'''
-node = "{{ read_file(path='frontend/.nvmrc') | trim }}"
-pnpm = "{{ read_json(path='frontend/package.json')['packageManager'] | split(pat='@') | last }}"
+# Версии инструментов задаются явно; doctor проверяет согласованность с языковыми файлами.
+go = "1.26.10"
+node = "24.21.0"
+pnpm = "12.4.2"
 golangci-lint = "2.13.2"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1.8.0"
 sqlc = "1.31.1"
@@ -70,42 +70,42 @@ default = ["postgres", "backend", "frontend"]
 dev = ["default"]
 
 [tasks."backend:deps"]
-description = "Download backend modules"
+description = "Загрузить Go-модули (из scripts/setup-worktree.sh: go mod download)"
 dir = "{{ config_root }}/backend"
 run = "go mod download"
 
 [tasks."api:deps"]
-description = "Install API tooling from lockfile"
+description = "Установить инструменты API по lock-файлу (из scripts/setup-worktree.sh: pnpm --dir api install)"
 dir = "{{ config_root }}/api"
 run = "pnpm install --frozen-lockfile --prod=false"
 
 [tasks."frontend:deps"]
-description = "Install frontend dependencies from lockfile"
+description = "Установить зависимости frontend по lock-файлу (из scripts/setup-worktree.sh: pnpm install в frontend)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm install --frozen-lockfile --prod=false"
 
 [tasks."frontend:browser"]
-description = "Install Playwright Chromium"
+description = "Установить Chromium для Playwright (из scripts/setup-worktree.sh: playwright install chromium)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec playwright install chromium"
 
 [tasks."frontend:browser-deps"]
-description = "Install Chromium system libraries on Linux (may need root)"
+description = "Установить системные библиотеки Chromium в Linux; могут потребоваться права root (новая задача)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec playwright install-deps chromium"
 
 [tasks."api:build"]
-description = "Compile TypeSpec to OpenAPI"
+description = "Скомпилировать TypeSpec в OpenAPI (из api/package.json: scripts.build)"
 dir = "{{ config_root }}/api"
 run = "pnpm exec tsp compile ."
 
 [tasks."api:generate"]
-description = "Generate OpenAPI and Fetch client"
+description = "Сгенерировать OpenAPI и Fetch-клиент (из api/package.json: scripts.generate)"
 dir = "{{ config_root }}/api"
 run = [{ task = "api:build" }, "pnpm exec openapi-ts"]
 
 [tasks."api:check"]
-description = "Check TypeSpec formatting and compilation"
+description = "Проверить форматирование и компиляцию TypeSpec (из api/package.json: scripts.check)"
 dir = "{{ config_root }}/api"
 run = [
   'pnpm exec tsp format --check "**/*.tsp"',
@@ -113,12 +113,12 @@ run = [
 ]
 
 [tasks."api:format"]
-description = "Format TypeSpec"
+description = "Отформатировать TypeSpec (из api/package.json: scripts.format)"
 dir = "{{ config_root }}/api"
 run = 'pnpm exec tsp format "**/*.tsp"'
 
 [tasks."backend:api-generate"]
-description = "Regenerate committed Go API models and routes"
+description = "Обновить сохраняемые в Git Go-модели и маршруты API (из Makefile: api-generate)"
 dir = "{{ config_root }}/backend"
 run = [
   { task = "api:build" },
@@ -127,42 +127,42 @@ run = [
 ]
 
 [tasks."backend:sqlc-generate"]
-description = "Regenerate committed Go database code"
+description = "Обновить сохраняемый в Git Go-код БД (из Makefile: sqlc-generate)"
 dir = "{{ config_root }}/backend"
 run = "sqlc generate"
 
 [tasks."backend:fmt"]
-description = "Apply gofmt and goimports"
+description = "Применить gofmt и goimports (из Makefile: fmt)"
 dir = "{{ config_root }}/backend"
 run = "golangci-lint fmt"
 
 [tasks."backend:lint-fix"]
-description = "Apply linter fixes and show the resulting diff"
+description = "Применить исправления линтера и показать изменения (из Makefile: lint-fix)"
 dir = "{{ config_root }}/backend"
 run = 'status=0; golangci-lint run --fix || status=$?; git diff -- .; exit "$status"'
 
 [tasks."backend:vet"]
-description = "Run go vet"
+description = "Выполнить go vet (из Makefile: vet)"
 dir = "{{ config_root }}/backend"
 run = "go vet ./..."
 
 [tasks."backend:test"]
-description = "Run all backend tests with race detector and real PostgreSQL (Docker required)"
+description = "Запустить все тесты backend с детектором гонок и PostgreSQL; нужен Docker (из Makefile: test)"
 dir = "{{ config_root }}/backend"
 run = "go test -race -count=1 ./..."
 
 [tasks."backend:test-unit"]
-description = "Run backend unit tests without Docker"
+description = "Запустить модульные тесты backend без Docker (из Makefile: test-unit)"
 dir = "{{ config_root }}/backend"
 run = "go test -race -tags=unit ./..."
 
 [tasks."backend:build"]
-description = "Build all backend packages"
+description = "Проверить сборку всех пакетов backend (из Makefile: build)"
 dir = "{{ config_root }}/backend"
 run = "go build ./..."
 
 [tasks."backend:dist"]
-description = "Build production server and migration binaries"
+description = "Собрать сервер и утилиту миграций для production (из Dockerfile: сборка Go-бинарников)"
 dir = "{{ config_root }}/backend"
 run = [
   "go build -trimpath -o bin/server ./cmd/server",
@@ -170,12 +170,12 @@ run = [
 ]
 
 [tasks."backend:vuln"]
-description = "Check reachable Go vulnerabilities"
+description = "Проверить вызываемые уязвимости Go (из Makefile: vuln)"
 dir = "{{ config_root }}/backend"
 run = "govulncheck ./..."
 
 [tasks."backend:check"]
-description = "Run every backend quality gate sequentially"
+description = "Последовательно выполнить все проверки качества backend (из Makefile: check)"
 run = [
   { task = "backend:lint" },
   { task = "backend:sqlc-check" },
@@ -186,27 +186,27 @@ run = [
 ]
 
 [tasks."backend:migrate-up"]
-description = "Apply migrations to explicitly selected DATABASE_URL"
+description = "Применить миграции к явно заданной DATABASE_URL (из Makefile: migrate-up)"
 dir = "{{ config_root }}/backend"
 run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" up'
 
 [tasks."backend:migrate-down"]
-description = "Roll back one migration in DATABASE_URL"
+description = "Откатить одну миграцию в DATABASE_URL (из Makefile: migrate-down)"
 dir = "{{ config_root }}/backend"
 run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" down'
 
 [tasks."backend:migrate-status"]
-description = "Show migrations in DATABASE_URL"
+description = "Показать состояние миграций в DATABASE_URL (из Makefile: migrate-status)"
 dir = "{{ config_root }}/backend"
 run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" status'
 
 [tasks."frontend:typecheck"]
-description = "Check TypeScript using the already generated API client"
+description = "Проверить TypeScript с уже сгенерированным API-клиентом (из frontend/package.json: scripts.typecheck)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec tsc -b"
 
 [tasks."frontend:build"]
-description = "Generate client, check TypeScript, build production assets"
+description = "Сгенерировать клиент, проверить TypeScript и собрать frontend (из frontend/package.json: scripts.build)"
 dir = "{{ config_root }}/frontend"
 run = [
   { task = "api:generate" },
@@ -215,21 +215,21 @@ run = [
 ]
 
 [tasks."frontend:lint-code"]
-description = "Check JS/TS with type information"
+description = "Проверить JS/TS с учётом типов (из frontend/package.json: scripts.lint:code)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec oxlint ."
 
 [tasks."frontend:lint-css"]
-description = "Check CSS without warnings"
+description = "Проверить CSS без предупреждений (из frontend/package.json: scripts.lint:css)"
 dir = "{{ config_root }}/frontend"
 run = 'pnpm exec stylelint "**/*.css" --max-warnings 0'
 
 [tasks."frontend:lint"]
-description = "Check frontend code and CSS"
+description = "Проверить код frontend и CSS (из frontend/package.json: scripts.lint)"
 run = [{ task = "frontend:lint-code" }, { task = "frontend:lint-css" }]
 
 [tasks."frontend:lint-fix"]
-description = "Apply Oxlint and Stylelint fixes"
+description = "Применить исправления Oxlint и Stylelint (из frontend/package.json: scripts.lint:fix)"
 dir = "{{ config_root }}/frontend"
 run = [
   "pnpm exec oxlint . --fix",
@@ -237,17 +237,17 @@ run = [
 ]
 
 [tasks."frontend:format"]
-description = "Format frontend files with Oxfmt"
+description = "Отформатировать frontend с помощью Oxfmt (из frontend/package.json: scripts.format)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec oxfmt ."
 
 [tasks."frontend:format-check"]
-description = "Check frontend formatting"
+description = "Проверить форматирование frontend (из frontend/package.json: scripts.format:check)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec oxfmt --check ."
 
 [tasks."frontend:check"]
-description = "Check contract, regenerate client, lint and check formatting"
+description = "Проверить контракт, генерацию клиента, линтеры и форматирование (из frontend/package.json: scripts.check)"
 run = [
   { task = "api:check" },
   { task = "api:generate" },
@@ -256,29 +256,29 @@ run = [
 ]
 
 [tasks."frontend:preview"]
-description = "Preview built frontend"
+description = "Запустить предварительный просмотр сборки frontend (из frontend/package.json: scripts.preview)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec vite preview"
 
 [tasks."frontend:test"]
-description = "Run Playwright tests against built assets; optional test file arguments"
+description = "Запустить Playwright для готовой сборки; можно передать файлы тестов (выделена из frontend/package.json: scripts.test:smoke)"
 dir = "{{ config_root }}/frontend"
 run = "pnpm exec playwright test"
 
 [tasks."frontend:test-smoke"]
-description = "Build and run production browser smoke tests (Docker required)"
+description = "Собрать frontend и запустить браузерные smoke-тесты; нужен Docker (из frontend/package.json: scripts.test:smoke)"
 run = [{ task = "frontend:build" }, { task = "frontend:test" }]
 
 [tasks."container:test"]
-description = "Build production image and test it with an isolated PostgreSQL"
+description = "Собрать production-образ и проверить его с отдельной PostgreSQL (из Makefile: test-container)"
 run = "python3 scripts/container-smoke.py"
 
 [tasks."hooks:install"]
-description = "Install repository-local commit-msg launcher through mise"
+description = "Установить локальный commit-msg hook репозитория через mise (новая задача)"
 run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --force-local; fi'
 
 [tasks.check]
-description = "Run backend and frontend quality, build and browser checks"
+description = "Проверить качество, сборку и браузерные сценарии backend/frontend (из scripts/setup-worktree.sh: SETUP_VERIFY=1)"
 run = [
   { task = "backend:check" },
   { task = "frontend:check" },
@@ -286,5 +286,5 @@ run = [
 ]
 
 [tasks."workflow:test"]
-description = "Test development workflow command boundaries"
+description = "Проверить поведение команд окружения разработки (новая задача)"
 run = "node --test scripts/tests/*.test.mjs"

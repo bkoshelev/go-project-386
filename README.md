@@ -58,10 +58,14 @@ API-клиент, устанавливает Chromium и локальный `com
 `mise install` также запускает повторяемую подготовку через `postinstall`.
 Сервисы запускаются только явно.
 
-[mise.toml](mise.toml) — источник команд; длинные сценарии находятся в
-[mise-tasks/](mise-tasks/), версии и доступные метаданные установок — в [mise.lock](mise.lock).
-Go читается из `backend/go.mod`, Node.js — из `frontend/.nvmrc`, pnpm — из
-`frontend/package.json`. `GOTOOLCHAIN=local` запрещает смену Go toolchain.
+[mise.toml](mise.toml) — источник команд и явно заданных точных версий инструментов,
+включая Go, Node.js и pnpm. Длинные сценарии находятся в [mise-tasks/](mise-tasks/),
+версии и доступные метаданные установок — в [mise.lock](mise.lock).
+При обновлении Go, Node.js или pnpm согласованно обновляйте `mise.toml`,
+`backend/go.mod`, `frontend/.nvmrc` и декларации `engines`/`packageManager`
+в `api/package.json` и `frontend/package.json`, затем выполняйте `mise lock go node pnpm`.
+`doctor` сверяет выбранные mise инструменты с `go.mod`, `.nvmrc` и `packageManager`
+frontend. `GOTOOLCHAIN=local` запрещает смену Go toolchain.
 Для source backends lockfile закрепляет версии, сборка Cargo использует Cargo.lock
 самого инструмента; `--locked` mise доступен для backends с URL в lockfile.
 Зависимости приложений остаются в языковых lock-файлах.

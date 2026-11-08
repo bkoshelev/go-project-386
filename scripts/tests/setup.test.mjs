@@ -23,6 +23,30 @@ test("Orca bootstrap reports a missing mise without requiring shell activation",
   assert.match(result.stderr, /Install mise 2026\.10\.17/u);
 });
 
+test("mise resolves exact Go, Node.js and pnpm versions without language version files", () => {
+  const cwd = mkdtempSync(join(tmpdir(), "mise versions "));
+  const env = { ...process.env, MISE_NO_HOOKS: "1" };
+  try {
+    cpSync("mise.toml", join(cwd, "mise.toml"));
+    assert.equal(spawnSync("mise", ["trust", join(cwd, "mise.toml")], { cwd, env }).status, 0);
+    const result = spawnSync("mise", ["ls", "--current", "--json", "go", "node", "pnpm"], {
+      cwd,
+      env,
+      encoding: "utf8",
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const tools = JSON.parse(result.stdout);
+    assert.equal(tools.length, 3);
+    for (const tool of tools) {
+      assert.equal(tool.active, true);
+      assert.match(tool.requested_version, /^\d+\.\d+\.\d+$/u);
+      assert.equal(tool.version, tool.requested_version);
+    }
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
 test("worktree dotenv overrides stay isolated and cannot enable Go toolchain switching", () => {
   const dir = mkdtempSync(join(tmpdir(), "mise env "));
   const env = { ...process.env, GOTOOLCHAIN: "auto", MISE_NO_HOOKS: "1" };
