@@ -1,0 +1,1372 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <link rel="icon" href="data:," />
+    <title>Инструменты проекта — Календарное бронирование</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        color: #22324b;
+        background: linear-gradient(145deg, #f3f6fc, #e8eef8);
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 1760px;
+        padding: 28px 32px 36px;
+        margin: auto;
+      }
+      header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+      .eyebrow {
+        color: #4264aa;
+        font-size: 12px;
+        font-weight: 750;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      h1 {
+        margin: 6px 0 8px;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1.1;
+        letter-spacing: -0.035em;
+      }
+      header p {
+        margin: 0;
+        max-width: 720px;
+        color: #53647f;
+      }
+      .summary {
+        flex-shrink: 0;
+        color: #4264aa;
+        font-weight: 650;
+      }
+      .canvas {
+        display: block;
+        overflow: hidden;
+        border: 1px solid #d5dfef;
+        border-radius: 26px;
+        background: #fff;
+        box-shadow: 0 18px 60px #203f7210;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        padding: 14px 18px;
+        border-bottom: 1px solid #dce4f1;
+      }
+      button {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 8px 14px;
+        border: 1px solid #cdd8eb;
+        border-radius: 12px;
+        background: #fff;
+        color: #243f70;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #edf3ff;
+      }
+      button:focus-visible,
+      .viewport:focus-visible {
+        outline: 3px solid #4979d9;
+        outline-offset: -3px;
+      }
+      button:disabled {
+        opacity: 0.55;
+        cursor: wait;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      #save {
+        background: #285bc3;
+        color: white;
+        border-color: #285bc3;
+      }
+      #zoom {
+        min-width: 56px;
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+      }
+      .gesture-hint {
+        margin-left: auto;
+        color: #596b88;
+        font-size: 13px;
+      }
+      .viewport {
+        position: relative;
+        height: min(75vh, 940px);
+        min-height: 550px;
+        overflow: hidden;
+        touch-action: none;
+        cursor: grab;
+        background-color: #f9fbff;
+        background-image: radial-gradient(#cdd9eb 1px, transparent 1px);
+        background-size: 28px 28px;
+      }
+      .viewport.dragging {
+        cursor: grabbing;
+        user-select: none;
+      }
+      .world {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 0;
+        height: 0;
+        transform-origin: 0 0;
+      }
+      .group,
+      .app-node {
+        display: block;
+        position: absolute;
+        width: 350px;
+      }
+      .group {
+        padding: 18px;
+        background: #edf2fa;
+        border: 1px solid #cbd8eb;
+        border-radius: 20px;
+        box-shadow: 0 8px 24px #23477c0a;
+      }
+      .group.wide {
+        width: 740px;
+      }
+      #skills {
+        width: 1520px;
+      }
+      .group.moving {
+        z-index: 2;
+        box-shadow: 0 16px 40px #23477c30;
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 20px;
+        line-height: 1.25;
+        letter-spacing: -0.02em;
+      }
+      .items {
+        display: grid;
+        grid-template-columns: repeat(var(--columns, 1), minmax(0, 1fr));
+        gap: 10px;
+      }
+      .subgroup {
+        padding: 16px;
+        border: 1px solid #cbd8eb;
+        border-radius: 14px;
+        background: #f5f8fd;
+      }
+      .subgroup h3 {
+        margin: 0 0 12px;
+        color: #355689;
+        font-size: 18px;
+      }
+      .subgroup-note,
+      .group-note {
+        margin: 0 0 14px;
+        color: #53647f;
+        font-size: 13px;
+      }
+      .skill-sources {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .item {
+        padding: 14px;
+        background: #fff;
+        border: 1px solid #dce4f0;
+        border-radius: 12px;
+        overflow-wrap: anywhere;
+      }
+      .item strong {
+        display: block;
+        font-size: 16px;
+        line-height: 1.3;
+        color: #243d66;
+      }
+      .item p {
+        margin: 6px 0 0;
+        color: #50627e;
+      }
+      .packages {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 8px;
+        margin-top: 9px;
+      }
+      code {
+        color: #41649c;
+        font:
+          12px/1.5 ui-monospace,
+          monospace;
+        overflow-wrap: anywhere;
+      }
+      .app-node {
+        display: block;
+        padding: 25px;
+        border-radius: 20px;
+        background: #2e5db5;
+        color: white;
+        box-shadow: 0 12px 30px #23477c25;
+      }
+      .app-node h2 {
+        font-size: 26px;
+        margin-bottom: 10px;
+      }
+      .app-node p {
+        margin: 0;
+        color: #e1ebff;
+      }
+      .notes {
+        padding: 14px 18px;
+        border-top: 1px solid #dce4f1;
+        color: #53647f;
+        font-size: 13px;
+      }
+      .notes p {
+        margin: 0 0 6px;
+      }
+      .notes p:last-child {
+        margin-bottom: 0;
+      }
+      #status {
+        color: #315595;
+      }
+      #status.error {
+        color: #a12e3b;
+      }
+      @media (max-width: 700px) {
+        main {
+          padding: 18px 12px;
+        }
+        header {
+          display: block;
+        }
+        .summary {
+          margin-top: 12px;
+        }
+        .canvas {
+          display: block;
+          border-radius: 18px;
+        }
+        .toolbar {
+          padding: 10px;
+          gap: 6px;
+        }
+        .gesture-hint {
+          width: 100%;
+          margin: 0;
+        }
+        .viewport {
+          height: 65vh;
+          min-height: 440px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <div class="eyebrow">Календарное бронирование</div>
+          <h1>Инструменты проекта</h1>
+          <p>
+            Карта библиотек, окружения и подходов: от интерфейса и API до проверок и работы агента.
+          </p>
+        </div>
+        <div class="summary">12 групп · 29 скиллов · 3 MCP</div>
+      </header>
+      <tool-canvas class="canvas" role="region" aria-label="Интерактивная карта инструментов">
+        <div class="toolbar" role="group" aria-label="Управление картой">
+          <button id="zoom-out" type="button" aria-label="Уменьшить масштаб" disabled>−</button>
+          <output id="zoom" aria-live="polite" aria-label="Масштаб">…</output>
+          <button id="zoom-in" type="button" aria-label="Увеличить масштаб" disabled>+</button>
+          <button id="reset" type="button" disabled>Сбросить вид</button>
+          <button id="save" type="button" hidden>Сохранить</button>
+          <span class="gesture-hint">Тяните фон или группу · Колесо — масштаб</span>
+        </div>
+        <div
+          class="viewport"
+          tabindex="0"
+          aria-label="Карта: перетаскивайте фон для обзора, группы для изменения раскладки"
+        >
+          <div class="world">
+            <tool-node class="app-node" x="1740" y="1080" role="region" aria-label="Приложение">
+              <h2>Календарное бронирование</h2>
+              <p>Самостоятельные frontend и backend, единый контракт API.</p>
+            </tool-node>
+            <!-- Каталог обновляется вручную. Только прямые пакеты; без версий и ссылок. -->
+            <tool-group
+              class="group"
+              id="frontend"
+              aria-labelledby="frontend-title"
+              x="0"
+              y="0"
+              style="--columns: 1"
+              role="region"
+            >
+              <h2 id="frontend-title">Frontend</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>React</strong>
+                  <p>
+                    Компоненты пользовательского интерфейса, рендеринг в DOM и типы для TypeScript.
+                  </p>
+                  <div class="packages">
+                    <code>react</code><code>react-dom</code><code>@types/react</code
+                    ><code>@types/react-dom</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>Mantine</strong>
+                  <p>Компоненты, поля дат и хуки интерфейса календаря.</p>
+                  <div class="packages">
+                    <code>@mantine/core</code><code>@mantine/dates</code><code>@mantine/hooks</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>XState</strong>
+                  <p>
+                    Автоматы состояний форм, загрузки и выбора времени; подключение actors к React.
+                  </p>
+                  <div class="packages"><code>xstate</code><code>@xstate/react</code></div>
+                </div>
+                <div class="item">
+                  <strong>Day.js</strong>
+                  <p>Работа с датами в календаре и компонентах Mantine.</p>
+                  <div class="packages"><code>dayjs</code></div>
+                </div>
+                <div class="item">
+                  <strong>Vite</strong>
+                  <p>Сервер разработки с React-плагином, прокси API и сборка frontend.</p>
+                  <div class="packages"><code>vite</code><code>@vitejs/plugin-react</code></div>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group"
+              id="backend"
+              aria-labelledby="backend-title"
+              x="390"
+              y="0"
+              style="--columns: 1"
+              role="region"
+            >
+              <h2 id="backend-title">Backend</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>Gin</strong>
+                  <p>HTTP-маршруты, middleware и подключение сгенерированных обработчиков API.</p>
+                  <div class="packages"><code>github.com/gin-gonic/gin</code></div>
+                </div>
+                <div class="item">
+                  <strong>Google UUID</strong>
+                  <p>Разбор и представление UUID в серверных сценариях.</p>
+                  <div class="packages"><code>github.com/google/uuid</code></div>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group"
+              id="api"
+              aria-labelledby="api-title"
+              x="800"
+              y="0"
+              style="--columns: 1"
+              role="region"
+            >
+              <h2 id="api-title">API и генерация</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>TypeSpec</strong>
+                  <p>
+                    Единый контракт HTTP API → OpenAPI; компиляция, HTTP-модель и описание схем.
+                  </p>
+                  <div class="packages">
+                    <code>@typespec/compiler</code><code>@typespec/http</code
+                    ><code>@typespec/openapi</code><code>@typespec/openapi3</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>Hey API</strong>
+                  <p>Типы, SDK и Fetch-клиент frontend из OpenAPI.</p>
+                  <div class="packages"><code>@hey-api/openapi-ts</code></div>
+                </div>
+                <div class="item">
+                  <strong>oapi-codegen</strong>
+                  <p>
+                    Явно объявленный Go tool: модели, Gin-маршруты, strict-интерфейс и встроенная
+                    OpenAPI-схема. Runtime поддерживает сгенерированный код.
+                  </p>
+                  <div class="packages">
+                    <code>github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen</code
+                    ><code>github.com/oapi-codegen/runtime</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>kin-openapi</strong>
+                  <p>Проверка нормализованных запросов по встроенной OpenAPI-схеме до binding.</p>
+                  <div class="packages"><code>github.com/getkin/kin-openapi</code></div>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group"
+              id="database"
+              aria-labelledby="database-title"
+              x="1190"
+              y="0"
+              style="--columns: 1"
+              role="region"
+            >
+              <h2 id="database-title">База данных</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>PostgreSQL</strong>
+                  <p>
+                    Постоянное хранение расписания и встреч; транзакции, UUID и защита от
+                    пересечений. Разработка, тесты и production.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>pgx</strong>
+                  <p>Соединения и пул PostgreSQL для backend и сгенерированных запросов.</p>
+                  <div class="packages"><code>github.com/jackc/pgx/v5</code></div>
+                </div>
+                <div class="item">
+                  <strong>goose</strong>
+                  <p>
+                    Встроенные SQL-миграции: подготовка схемы при старте, ручные операции и тесты.
+                  </p>
+                  <div class="packages"><code>github.com/pressly/goose/v3</code></div>
+                </div>
+                <div class="item">
+                  <strong>sqlc</strong>
+                  <p>Генерация типизированных Go-запросов из SQL; проверка актуальности в CI.</p>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group wide"
+              id="development"
+              aria-labelledby="development-title"
+              x="0"
+              y="900"
+              style="--columns: 2"
+              role="region"
+            >
+              <h2 id="development-title">Разработка</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>mise</strong>
+                  <p>
+                    Общие задачи подготовки, запуска, генерации и проверок; закрепление инструментов
+                    локально, в CI и Docker.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Go</strong>
+                  <p>
+                    Сборка backend; встроенные gofmt, vet, testing и httptest, тестирование с
+                    детектором гонок (требует C-компилятор).
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Node.js</strong>
+                  <p>
+                    Среда инструментов frontend и API, npx и встроенный test runner для сценариев
+                    окружения.
+                  </p>
+                  <div class="packages"><code>@types/node</code></div>
+                </div>
+                <div class="item">
+                  <strong>pnpm</strong>
+                  <p>
+                    Установка прямых и зафиксированных зависимостей frontend и API; запуск пакетных
+                    инструментов.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>TypeScript</strong>
+                  <p>
+                    Типизация frontend и проверка конфигураций и тестов; отдельно используется
+                    генератором API.
+                  </p>
+                  <div class="packages"><code>typescript</code></div>
+                </div>
+                <div class="item">
+                  <strong>hk</strong>
+                  <p>Локальный Git hook commit-msg и проверка Conventional Commits.</p>
+                </div>
+                <div class="item">
+                  <strong>pitchfork</strong>
+                  <p>
+                    Закреплённая зависимость mise daemons для управления dev-процессами и их
+                    портами.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Rust</strong>
+                  <p>
+                    Cargo toolchain для установки hk и pitchfork; сборка из исходников на macOS
+                    Intel.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Bash</strong>
+                  <p>Bootstrap worktree и файловые задачи подготовки, диагностики и проверок.</p>
+                </div>
+                <div class="item">
+                  <strong>Git</strong>
+                  <p>
+                    Worktree, контроль изменений, hooks и проверка актуальности генерации; также
+                    используется при сборке контейнера.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>curl</strong>
+                  <p>
+                    Загрузка mise и HTTP-проверки готовности dev-сервисов; также используется при
+                    сборке контейнера.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Python 3</strong>
+                  <p>Контейнерный smoke-сценарий: запуск окружения, проверки и очистка ресурсов.</p>
+                </div>
+                <div class="item">
+                  <strong>GitHub CLI</strong>
+                  <p>Работа с GitHub Issues и PR в документированных сценариях агента.</p>
+                </div>
+                <div class="item">
+                  <strong>Plannotator</strong>
+                  <p>
+                    Локальное браузерное ревью планов, спецификаций и изменений; аннотации
+                    возвращаются агенту как замечания. Дополнительный сценарий ревью в проекте.
+                  </p>
+                </div>
+              </div></tool-group
+            >
+            <tool-group
+              class="group wide"
+              id="quality"
+              aria-labelledby="quality-title"
+              x="1580"
+              y="0"
+              style="--columns: 2"
+              role="region"
+            >
+              <h2 id="quality-title">Качество и тестирование</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>golangci-lint</strong>
+                  <p>
+                    Статический анализ всего backend, включая gosec; форматирование gofmt и
+                    goimports внутри семейства.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>govulncheck</strong>
+                  <p>Отдельная проверка известных уязвимостей реально вызываемого Go-кода.</p>
+                </div>
+                <div class="item">
+                  <strong>Testify</strong>
+                  <p>Утверждения и проверки ответов Gin-роутера и серверного поведения.</p>
+                  <div class="packages"><code>github.com/stretchr/testify</code></div>
+                </div>
+                <div class="item">
+                  <strong>testfixtures</strong>
+                  <p>Начальные YAML-данные интеграционных тестов PostgreSQL.</p>
+                  <div class="packages">
+                    <code>github.com/go-testfixtures/testfixtures/v3</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>Testcontainers PostgreSQL</strong>
+                  <p>Одноразовая реальная PostgreSQL для интеграционных Go-тестов.</p>
+                  <div class="packages">
+                    <code>github.com/testcontainers/testcontainers-go/modules/postgres</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>Playwright Test</strong>
+                  <p>
+                    Браузерные сценарии production frontend с настоящим backend и изолированными БД;
+                    также контейнерный smoke.
+                  </p>
+                  <div class="packages"><code>@playwright/test</code></div>
+                </div>
+                <div class="item">
+                  <strong>Oxfmt</strong>
+                  <p>Единое форматирование frontend и проверка в CI.</p>
+                  <div class="packages"><code>oxfmt</code></div>
+                </div>
+                <div class="item">
+                  <strong>Oxlint</strong>
+                  <p>
+                    Анализ JS/TS, React, Hooks и JSX-доступности; oxlint-tsgolint добавляет анализ
+                    типов и Promise.
+                  </p>
+                  <div class="packages"><code>oxlint</code><code>oxlint-tsgolint</code></div>
+                </div>
+                <div class="item">
+                  <strong>Stylelint</strong>
+                  <p>Проверка CSS со стандартным набором правил.</p>
+                  <div class="packages">
+                    <code>stylelint</code><code>stylelint-config-standard</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>Chromium и Google Chrome</strong>
+                  <p>
+                    Chromium для локальных браузерных тестов; Google Chrome в CI и браузерных MCP.
+                    Инспекция через MCP — дополнительный сценарий.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>React DevTools</strong>
+                  <p>
+                    Дополнительная dev-интеграция страницы с Chrome DevTools MCP: дерево React,
+                    props, Hooks и профилирование. Не отдельный MCP-сервер.
+                  </p>
+                  <div class="packages"><code>react-devtools-cdt-mcp</code></div>
+                </div>
+                <div class="item">
+                  <strong>FFmpeg и ffprobe</strong>
+                  <p>
+                    Дополнительный сценарий записи демонстраций: проверка MP4, длительности и
+                    видеопотока, извлечение кадров.
+                  </p>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group wide"
+              id="infrastructure"
+              aria-labelledby="infrastructure-title"
+              x="2400"
+              y="1400"
+              style="--columns: 2"
+              role="region"
+            >
+              <h2 id="infrastructure-title">CI/CD и инфраструктура</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>Docker и Docker Compose</strong>
+                  <p>
+                    Сборка единого образа frontend и Go-сервера, отдельная PostgreSQL и контейнерный
+                    smoke. Сборка на Debian, итоговый Distroless без shell; ca-certificates и
+                    xz-utils для подготовки инструментов. Git и curl также используются в сборке.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>GitHub Actions</strong>
+                  <p>
+                    Проверки backend, frontend, контейнера и заголовка PR; checkout, установка mise
+                    и загрузка диагностических артефактов.
+                  </p>
+                  <div class="packages">
+                    <code>actions/checkout</code><code>actions/upload-artifact</code
+                    ><code>jdx/mise-action</code>
+                  </div>
+                </div>
+                <div class="item">
+                  <strong>release-please</strong>
+                  <p>
+                    Единая версия продукта, changelog, release PR, тег и GitHub Release после
+                    ручного слияния.
+                  </p>
+                  <div class="packages"><code>googleapis/release-please-action</code></div>
+                </div>
+                <div class="item">
+                  <strong>Hexlet project action</strong>
+                  <p>Учебная проверка проекта на push веток и тегов.</p>
+                  <div class="packages"><code>hexlet/project-action</code></div>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group wide"
+              id="skills"
+              aria-labelledby="skills-title"
+              x="2400"
+              y="0"
+              style="--columns: 4"
+              role="region"
+              ><h2 id="skills-title">Скиллы</h2>
+              <section class="subgroup" id="skills-matt" aria-labelledby="skills-matt-title">
+                <h3 id="skills-matt-title">Matt Pocock</h3>
+                <p class="subgroup-note">27 скиллов из mattpocock/skills</p>
+                <div class="items">
+                  <div class="item">
+                    <strong>ask-matt</strong>
+                    <p>Выбор подходящего скилла или последовательности работы.</p>
+                  </div>
+                  <div class="item">
+                    <strong>code-review</strong>
+                    <p>Проверка изменений по стандартам репозитория и исходной спецификации.</p>
+                  </div>
+                  <div class="item">
+                    <strong>codebase-design</strong>
+                    <p>Проектирование глубоких модулей, их интерфейсов и границ.</p>
+                  </div>
+                  <div class="item">
+                    <strong>diagnosing-bugs</strong>
+                    <p>
+                      Последовательная диагностика сложных ошибок и регрессий производительности.
+                    </p>
+                  </div>
+                  <div class="item">
+                    <strong>domain-modeling</strong>
+                    <p>Уточнение предметной модели, терминов, глоссария и ADR.</p>
+                  </div>
+                  <div class="item">
+                    <strong>grill-me</strong>
+                    <p>Подробное интервью для уточнения плана или дизайна.</p>
+                  </div>
+                  <div class="item">
+                    <strong>grill-with-docs</strong>
+                    <p>Интервью с фиксацией решений в ADR и глоссарии.</p>
+                  </div>
+                  <div class="item">
+                    <strong>grilling</strong>
+                    <p>Проверка идеи, плана или решения серией уточняющих вопросов.</p>
+                  </div>
+                  <div class="item">
+                    <strong>handoff</strong>
+                    <p>Подготовка документа передачи контекста следующему агенту.</p>
+                  </div>
+                  <div class="item">
+                    <strong>implement</strong>
+                    <p>Реализация работы по спецификации или набору задач.</p>
+                  </div>
+                  <div class="item">
+                    <strong>implement-spec</strong>
+                    <p>Реализация спецификации и задач, подготовленных to-spec и to-tickets.</p>
+                  </div>
+                  <div class="item">
+                    <strong>improve-codebase-architecture</strong>
+                    <p>
+                      Поиск возможностей улучшить границы модулей, HTML-отчёт и обсуждение выбора.
+                    </p>
+                  </div>
+                  <div class="item">
+                    <strong>pr</strong>
+                    <p>Подготовка описания pull request.</p>
+                  </div>
+                  <div class="item">
+                    <strong>prototype</strong>
+                    <p>Одноразовый прототип для проверки модели, логики или интерфейса.</p>
+                  </div>
+                  <div class="item">
+                    <strong>research</strong>
+                    <p>
+                      Исследование по первичным источникам с сохранением результатов в Markdown.
+                    </p>
+                  </div>
+                  <div class="item">
+                    <strong>retro</strong>
+                    <p>Ретроспектива сессии разработки.</p>
+                  </div>
+                  <div class="item">
+                    <strong>setup-matt-pocock-skills</strong>
+                    <p>Первоначальная настройка трекера, triage-меток и предметной документации.</p>
+                  </div>
+                  <div class="item">
+                    <strong>tdd</strong>
+                    <p>Разработка через тесты поведения и цикл red → green → refactor.</p>
+                  </div>
+                  <div class="item">
+                    <strong>teach</strong>
+                    <p>Обучение новому навыку или понятию в контексте проекта.</p>
+                  </div>
+                  <div class="item">
+                    <strong>to-questionnaire</strong>
+                    <p>Подготовка анкеты по решению, для которого не хватает ответов.</p>
+                  </div>
+                  <div class="item">
+                    <strong>to-spec</strong>
+                    <p>Синтез обсуждения в спецификацию и публикация в трекере проекта.</p>
+                  </div>
+                  <div class="item">
+                    <strong>to-tickets</strong>
+                    <p>Разбиение плана на сквозные задачи с зависимостями в трекере.</p>
+                  </div>
+                  <div class="item">
+                    <strong>triage</strong>
+                    <p>Классификация и уточнение Issues и внешних PR до готовности к работе.</p>
+                  </div>
+                  <div class="item">
+                    <strong>wait-what</strong>
+                    <p>Повторное понятное объяснение предыдущего сообщения.</p>
+                  </div>
+                  <div class="item">
+                    <strong>wayfinder</strong>
+                    <p>Планирование большой работы как карты взаимосвязанных решений и задач.</p>
+                  </div>
+                  <div class="item">
+                    <strong>wizard</strong>
+                    <p>Интерактивный Bash-мастер для шагов, которые выполняет человек.</p>
+                  </div>
+                  <div class="item">
+                    <strong>writing-for-agents</strong>
+                    <p>Написание и редактирование инструкций и документов для агентов.</p>
+                  </div>
+                </div>
+              </section>
+              <div class="skill-sources">
+                <section
+                  class="subgroup"
+                  id="skills-project"
+                  aria-labelledby="skills-project-title"
+                >
+                  <h3 id="skills-project-title">Проект</h3>
+                  <div class="items" style="--columns: 1">
+                    <div class="item">
+                      <strong>record-browser-video</strong>
+                      <p>Запись локального сценария через Chrome DevTools MCP и проверка MP4.</p>
+                    </div>
+                  </div>
+                </section>
+                <section class="subgroup" id="skills-orca" aria-labelledby="skills-orca-title">
+                  <h3 id="skills-orca-title">Orca</h3>
+                  <div class="items" style="--columns: 1">
+                    <div class="item">
+                      <strong>Orca orchestration</strong>
+                      <p>
+                        Скилл окружения Orca: поручения отдельным worker-агентам, зависимости задач,
+                        контроль выполнения и получение результатов. Установлен в окружении,
+                        отдельно от локальных скиллов репозитория.
+                      </p>
+                      <div class="packages"><code>orchestration</code></div>
+                    </div>
+                  </div>
+                </section>
+              </div></tool-group
+            >
+            <tool-group
+              class="group wide"
+              id="mcp"
+              aria-labelledby="mcp-title"
+              x="800"
+              y="1000"
+              style="--columns: 2"
+              role="region"
+            >
+              <h2 id="mcp-title">MCP</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>Playwright MCP</strong>
+                  <p>Браузерное взаимодействие, проверка сценариев и снимки экрана агентом.</p>
+                  <div class="packages"><code>@playwright/mcp</code></div>
+                </div>
+                <div class="item">
+                  <strong>Chrome DevTools MCP</strong>
+                  <p>
+                    Диагностика консоли, сети и производительности; подключение React DevTools
+                    страницы.
+                  </p>
+                  <div class="packages"><code>chrome-devtools-mcp</code></div>
+                </div>
+                <div class="item">
+                  <strong>Mantine MCP</strong>
+                  <p>
+                    Документация, свойства компонентов и примеры Mantine для разработки интерфейса.
+                  </p>
+                  <div class="packages"><code>@mantine/mcp-server</code></div>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group wide"
+              id="architecture"
+              aria-labelledby="architecture-title"
+              x="1580"
+              y="1330"
+              style="--columns: 2"
+              role="region"
+            >
+              <h2 id="architecture-title">Архитектурные паттерны</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>Feature-Based Architecture</strong>
+                  <p>
+                    Модули по функциям продукта с небольшими публичными API; композиция экранов
+                    находится выше функций.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Vertical Slice Architecture</strong>
+                  <p>
+                    Конкретный сценарий от входа до результата: HTTP-адаптер, предметные правила и
+                    SQL; общая инфраструктура сохраняется.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Event-Driven Architecture (EDA) с конечными автоматами (FSM)</strong>
+                  <p>
+                    Событийная архитектура: локальные события и XState описывают допустимые
+                    состояния и переходы интерфейса; результаты эффектов возвращаются в автомат.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Workflow-based architecture</strong>
+                  <p>
+                    Функции-координаторы выполняют шаги запросов и возвращают результаты в FSM. Для
+                    коротких сценариев не требуется долговечный движок.
+                  </p>
+                </div>
+              </div>
+            </tool-group>
+            <tool-group
+              class="group wide"
+              id="practices"
+              aria-labelledby="practices-title"
+              x="800"
+              y="1470"
+              style="--columns: 2"
+              role="region"
+              ><h2 id="practices-title">Практики разработки</h2>
+              <div class="items">
+                <div class="item">
+                  <strong>API Design-first</strong>
+                  <p>
+                    Сначала контракт TypeSpec/OpenAPI; затем генерация Fetch-клиента Hey API и
+                    HTTP-слоя Go через oapi-codegen. Обработчики реализуют согласованный контракт.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Spec Driven Development (SDD)</strong>
+                  <p>
+                    Сначала согласуются поведение, ограничения и критерии приёмки в спецификации,
+                    затем выполняются реализация и проверка соответствия.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Architecture Decision Record (ADR)</strong>
+                  <p>
+                    Фиксация контекста, выбранного решения, причин и последствий. Общие
+                    архитектурные решения frontend и backend сохраняют обоснование выбора.
+                  </p>
+                </div>
+              </div></tool-group
+            ><tool-group
+              class="group wide"
+              id="not-adopted"
+              aria-labelledby="not-adopted-title"
+              x="3180"
+              y="1400"
+              style="--columns: 2"
+              role="region"
+              ><h2 id="not-adopted-title">Еще не внедрено</h2>
+              <p class="group-note">Запланированные средства; пока не используются в проекте.</p>
+              <div class="items">
+                <div class="item">
+                  <strong>OpenSpec</strong>
+                  <p>
+                    Средство ведения спецификаций и изменений для Spec Driven Development. Ещё не
+                    внедрено в проекте.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Render.com</strong>
+                  <p>
+                    Платформа размещения приложения и PostgreSQL. Документация описывает возможный
+                    запуск; фактическое развёртывание ещё не внедрено.
+                  </p>
+                </div>
+                <div class="item">
+                  <strong>Dev Containers</strong>
+                  <p>
+                    Воспроизводимое контейнерное окружение разработки. Конфигурация dev container
+                    ещё не внедрена; Docker и Compose уже используются для приложения и тестов.
+                  </p>
+                </div>
+              </div></tool-group
+            >
+          </div>
+        </div>
+        <div class="notes">
+          <p id="status" role="status">Загрузка раскладки…</p>
+          <p>
+            При открытии автоматически загружается соседний <code>state.js</code>, в том числе через
+            <code>file://</code>. Сервер и специальные настройки браузера не нужны. Если файл
+            недоступен или повреждён, используется встроенная раскладка.
+          </p>
+          <p>
+            «Сохранить» записывает или скачивает только координаты групп. Для следующего открытия
+            поместите файл рядом с <code>tools.html</code> под именем <code>state.js</code>.
+            Скачивание в другое место не обновляет исходный файл.
+          </p>
+          <p>
+            Каталог встроен в HTML и обновляется вручную. Архитектурные карточки описывают
+            документированные подходы и выбранные границы, а не полноту их реализации.
+          </p>
+        </div>
+      </tool-canvas>
+    </main>
+    <script>
+      class ToolNode extends HTMLElement {
+        connectedCallback() {
+          this.style.left = `${this.getAttribute("x") || 0}px`;
+          this.style.top = `${this.getAttribute("y") || 0}px`;
+        }
+      }
+
+      class ToolGroup extends HTMLElement {
+        connectedCallback() {
+          if (this.style.left && this.style.top) return;
+          this.style.left = `${this.getAttribute("x") || 0}px`;
+          this.style.top = `${this.getAttribute("y") || 0}px`;
+        }
+      }
+
+      class ToolCanvas extends HTMLElement {
+        connectedCallback() {
+          if (this.initialized) {
+            this.resizeObserver.observe(this.viewport);
+            return;
+          }
+          this.initialized = true;
+          this.viewport = this.querySelector(".viewport");
+          this.world = this.querySelector(".world");
+          this.zoomValue = this.querySelector("#zoom");
+          this.saveButton = this.querySelector("#save");
+          this.status = this.querySelector("#status");
+          this.groups = [...this.querySelectorAll("tool-group")];
+          this.nodes = [...this.groups, ...this.querySelectorAll("tool-node")];
+          this.groupPositions = this.createGroupPositionsStateFromCurrentLayout();
+          this.scale = 1;
+          this.x = 0;
+          this.y = 0;
+          this.drag = null;
+          this.isDirty = false;
+          this.isSaving = false;
+          this.isStateReady = false;
+
+          this.querySelector("#zoom-in").addEventListener("click", () => this.zoomBy(1.16));
+          this.querySelector("#zoom-out").addEventListener("click", () => this.zoomBy(1 / 1.16));
+          this.querySelector("#reset").addEventListener("click", () => this.reset());
+          this.saveButton.addEventListener("click", () => this.saveGroupPositions());
+          this.viewport.addEventListener("wheel", (event) => this.onWheel(event), {
+            passive: false,
+          });
+          this.viewport.addEventListener("pointerdown", (event) => this.onPointerDown(event));
+          this.viewport.addEventListener("pointermove", (event) => this.onPointerMove(event));
+          for (const event of ["pointerup", "pointercancel", "lostpointercapture"]) {
+            this.viewport.addEventListener(event, (event) => this.onPointerUp(event));
+          }
+          this.resizeObserver = new ResizeObserver(() => {
+            if (this.isStateReady && !this.drag) this.reset();
+          });
+          this.resizeObserver.observe(this.viewport);
+          this.initializeState();
+        }
+
+        disconnectedCallback() {
+          this.resizeObserver?.disconnect();
+        }
+
+        message(text, error = false) {
+          this.status.textContent = text;
+          this.status.classList.toggle("error", error);
+        }
+
+        async initializeState() {
+          this.groupPositions = await this.loadGroupPositionsState();
+          this.applyGroupPositionsState(this.groupPositions);
+          this.isStateReady = true;
+          this.querySelectorAll(".toolbar button:not(#save)").forEach((button) => {
+            button.disabled = false;
+          });
+          this.reset();
+        }
+
+        async loadGroupPositionsState() {
+          const script = document.createElement("script");
+          try {
+            delete window.toolsMapState;
+            // Classic scripts can load adjacent files over file:// without fetch CORS checks.
+            script.src = `./state.js?updated=${Date.now()}`;
+            await new Promise((resolve, reject) => {
+              script.onload = resolve;
+              script.onerror = () => reject(new Error("state.js load failed"));
+              document.head.append(script);
+            });
+            const loaded = window.toolsMapState;
+            if (
+              !loaded ||
+              typeof loaded !== "object" ||
+              Array.isArray(loaded) ||
+              !loaded.groups ||
+              typeof loaded.groups !== "object" ||
+              Array.isArray(loaded.groups)
+            ) {
+              throw new Error("state.js must assign window.toolsMapState with a groups object");
+            }
+            const state = this.normalizeGroupPositionsState(loaded);
+            this.message(
+              this.groups.every((group) => state.groups[group.id])
+                ? "Раскладка загружена из state.js."
+                : "Раскладка загружена частично: отсутствующие или некорректные координаты заменены встроенными.",
+            );
+            return state;
+          } catch (error) {
+            console.warn(
+              "Не удалось загрузить state.js, используются координаты из HTML-атрибутов.",
+              error,
+            );
+            this.message("Используется встроенная раскладка: state.js недоступен или повреждён.");
+            return this.createGroupPositionsStateFromCurrentLayout();
+          } finally {
+            script.remove();
+          }
+        }
+
+        normalizeGroupPositionsState(state) {
+          const groups = state?.groups && typeof state.groups === "object" ? state.groups : {};
+          return {
+            groups: Object.fromEntries(
+              Object.entries(groups)
+                .map(([id, position]) => [id, { x: Number(position?.x), y: Number(position?.y) }])
+                .filter(
+                  ([, position]) => Number.isFinite(position.x) && Number.isFinite(position.y),
+                ),
+            ),
+          };
+        }
+
+        applyGroupPositionsState(state) {
+          for (const group of this.groups) {
+            const position = state.groups[group.id];
+            if (position) {
+              this.setGroupPosition(group, position.x, position.y);
+            } else {
+              this.setGroupPosition(
+                group,
+                group.getAttribute("x") || 0,
+                group.getAttribute("y") || 0,
+              );
+            }
+          }
+        }
+
+        reset() {
+          const left = Math.min(...this.nodes.map((node) => node.offsetLeft));
+          const top = Math.min(...this.nodes.map((node) => node.offsetTop));
+          const right = Math.max(...this.nodes.map((node) => node.offsetLeft + node.offsetWidth));
+          const bottom = Math.max(...this.nodes.map((node) => node.offsetTop + node.offsetHeight));
+          const padding = 24;
+          // Fit must include every group even when the saved layout is very spread out.
+          this.scale = Math.min(
+            1,
+            (this.viewport.clientWidth - padding * 2) / (right - left),
+            (this.viewport.clientHeight - padding * 2) / (bottom - top),
+          );
+          this.x = (this.viewport.clientWidth - (right + left) * this.scale) / 2;
+          this.y = (this.viewport.clientHeight - (bottom + top) * this.scale) / 2;
+          this.applyTransform();
+        }
+
+        zoomBy(factor, origin = null) {
+          const next = Math.max(Math.min(this.scale, 0.02), Math.min(3, this.scale * factor));
+          const rect = this.viewport.getBoundingClientRect();
+          const point = origin || { x: rect.width / 2, y: rect.height / 2 };
+          const worldX = (point.x - this.x) / this.scale;
+          const worldY = (point.y - this.y) / this.scale;
+          this.scale = next;
+          this.x = point.x - worldX * this.scale;
+          this.y = point.y - worldY * this.scale;
+          this.applyTransform();
+        }
+
+        onWheel(event) {
+          event.preventDefault();
+          if (!this.isStateReady || this.drag || event.deltaY === 0) return;
+          const rect = this.viewport.getBoundingClientRect();
+          this.zoomBy(event.deltaY < 0 ? 1.12 : 1 / 1.12, {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top,
+          });
+        }
+
+        onPointerDown(event) {
+          if (
+            !this.isStateReady ||
+            this.isSaving ||
+            this.drag ||
+            event.button !== 0 ||
+            !event.isPrimary
+          )
+            return;
+          const group = event.target.closest("tool-group");
+          const position = group ? this.readGroupPosition(group) : { x: this.x, y: this.y };
+          this.drag = {
+            id: event.pointerId,
+            group,
+            startX: event.clientX,
+            startY: event.clientY,
+            x: position.x,
+            y: position.y,
+          };
+          this.viewport.setPointerCapture(event.pointerId);
+          this.viewport.classList.add("dragging");
+          group?.classList.add("moving");
+          event.preventDefault();
+        }
+
+        onPointerMove(event) {
+          if (!this.drag || this.drag.id !== event.pointerId) return;
+          const dx = event.clientX - this.drag.startX;
+          const dy = event.clientY - this.drag.startY;
+          if (this.drag.group) {
+            const x = Math.round(this.drag.x + dx / this.scale);
+            const y = Math.round(this.drag.y + dy / this.scale);
+            const current = this.readGroupPosition(this.drag.group);
+            if (x !== current.x || y !== current.y) {
+              this.setGroupPosition(this.drag.group, x, y);
+              this.markDirty();
+            }
+          } else {
+            this.x = this.drag.x + dx;
+            this.y = this.drag.y + dy;
+            this.applyTransform();
+          }
+        }
+
+        onPointerUp(event) {
+          if (!this.drag || this.drag.id !== event.pointerId) return;
+          this.drag.group?.classList.remove("moving");
+          this.drag = null;
+          this.viewport.classList.remove("dragging");
+          if (this.viewport.hasPointerCapture(event.pointerId))
+            this.viewport.releasePointerCapture(event.pointerId);
+        }
+
+        readGroupPosition(group) {
+          return {
+            x: Number.parseFloat(group.style.left) || 0,
+            y: Number.parseFloat(group.style.top) || 0,
+          };
+        }
+
+        setGroupPosition(group, x, y) {
+          group.style.left = `${Math.round(Number(x) || 0)}px`;
+          group.style.top = `${Math.round(Number(y) || 0)}px`;
+        }
+
+        markDirty() {
+          this.isDirty = true;
+          this.saveButton.hidden = false;
+          this.message("Раскладка изменена. Сохраните координаты групп.");
+        }
+
+        async saveGroupPositions() {
+          if (!this.isDirty || this.isSaving) return;
+          this.isSaving = true;
+          this.saveButton.disabled = true;
+          const state = this.createGroupPositionsStateFromCurrentLayout();
+          const source = `window.toolsMapState = ${JSON.stringify(state, null, 2)};\n`;
+          try {
+            if (typeof window.showSaveFilePicker === "function") {
+              const fileHandle = await window.showSaveFilePicker({
+                suggestedName: "state.js",
+                types: [
+                  {
+                    description: "Раскладка карты (JavaScript)",
+                    accept: { "text/javascript": [".js"] },
+                  },
+                ],
+              });
+              const writable = await fileHandle.createWritable();
+              await writable.write(source);
+              await writable.close();
+              this.message(
+                "Координаты записаны в выбранный файл. Для восстановления используйте соседний state.js.",
+              );
+            } else {
+              this.downloadStateScript(source);
+              this.message(
+                "Скачивание state.js начато. Поместите его рядом с tools.html для следующего открытия.",
+              );
+              alert(
+                "Ваш браузер не поддерживает File System Access API. Файл state.js скачан через стандартную загрузку.",
+              );
+            }
+            this.groupPositions = state;
+            this.clearDirty();
+          } catch (error) {
+            if (error?.name === "AbortError") {
+              this.message("Сохранение отменено. Изменения остаются несохранёнными.");
+              return;
+            }
+            console.error("Не удалось сохранить state.js.", error);
+            this.message(
+              "Не удалось записать раскладку. Изменения сохранены на карте; попробуйте ещё раз.",
+              true,
+            );
+            alert("Не удалось сохранить state.js. Подробности смотрите в консоли браузера.");
+          } finally {
+            this.isSaving = false;
+            this.saveButton.disabled = false;
+          }
+        }
+
+        clearDirty() {
+          this.isDirty = false;
+          this.saveButton.hidden = true;
+        }
+
+        downloadStateScript(source) {
+          const blob = new Blob([source], { type: "text/javascript" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "state.js";
+          document.body.append(link);
+          link.click();
+          link.remove();
+          URL.revokeObjectURL(url);
+        }
+
+        createGroupPositionsStateFromCurrentLayout() {
+          return {
+            groups: this.groups.reduce((groups, group) => {
+              groups[group.id] = this.readGroupPosition(group);
+              return groups;
+            }, {}),
+          };
+        }
+
+        applyTransform() {
+          this.world.style.transform = `translate(${this.x}px, ${this.y}px) scale(${this.scale})`;
+          this.zoomValue.value = `${Math.round(this.scale * 100)}%`;
+        }
+      }
+
+      customElements.define("tool-node", ToolNode);
+      customElements.define("tool-group", ToolGroup);
+      customElements.define("tool-canvas", ToolCanvas);
+    </script>
+  </body>
+</html>
