@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/bkoshelev/go-project-386/compare/v0.6.0...v0.6.1) (2026-11-12)
+
+
+### Miscellaneous Chores
+
+* configure Renovate dependency updates ([#88](https://github.com/bkoshelev/go-project-386/issues/88)) ([7ee31e9](https://github.com/bkoshelev/go-project-386/commit/7ee31e9dfb1964ffec74e9a43bc2c4997b70a88b))
+
 ## [0.6.0](https://github.com/bkoshelev/go-project-386/compare/v0.5.0...v0.6.0) (2026-11-08)
 
 
