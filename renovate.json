@@ -1,6 +1,140 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
+  "extends": ["config:recommended"],
+  "enabledManagers": [
+    "gomod",
+    "npm",
+    "mise",
+    "nvm",
+    "github-actions",
+    "dockerfile",
+    "docker-compose",
+    "custom.regex"
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    ".agents/**",
+    "**/generated/**",
+    "frontend/dist/**"
+  ],
+  "automerge": false,
+  "prConcurrentLimit": 4,
+  "prHourlyLimit": 2,
+  "packageRules": [
+    {
+      "description": "Требовать одобрение в панели зависимостей перед созданием PR с обновлением основной версии.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Согласованно обновлять директиву go и версию Go, закреплённую в mise.",
+      "matchManagers": ["gomod"],
+      "matchDepNames": ["go"],
+      "matchDepTypes": ["golang"],
+      "rangeStrategy": "bump"
+    },
+    {
+      "description": "Сохранять приложение на ветке Go 1.26.",
+      "matchManagers": ["gomod", "mise"],
+      "matchDepNames": ["go"],
+      "allowedVersions": ">=1.26.0 <1.27.0",
+      "groupName": "Go toolchain",
+      "prPriority": 10
+    },
+    {
+      "description": "Согласованно обновлять версии Node.js в mise, nvm и обоих npm-пакетах.",
+      "matchManagers": ["mise", "nvm", "npm"],
+      "matchDepNames": ["node"],
+      "rangeStrategy": "bump",
+      "groupName": "Node.js toolchain"
+    },
+    {
+      "description": "Согласованно обновлять версии pnpm в mise, engines и packageManager.",
+      "matchManagers": ["mise", "npm"],
+      "matchDepNames": ["pnpm"],
+      "rangeStrategy": "bump",
+      "groupName": "pnpm toolchain"
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@mantine/*"],
+      "groupName": "Mantine"
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackageNames": ["@typespec/*"],
+      "groupName": "TypeSpec"
+    },
+    {
+      "description": "Согласованно обновлять версию Rust и RUSTUP_TOOLCHAIN.",
+      "matchManagers": ["mise", "custom.regex"],
+      "matchDepNames": ["rust"],
+      "groupName": "Rust toolchain"
+    },
+    {
+      "description": "Согласованно обновлять PostgreSQL в окружении разработки, Compose и тестовых контейнерах.",
+      "matchDepNames": ["postgres", "conda:postgresql"],
+      "groupName": "PostgreSQL",
+      "allowedVersions": "/^18\\./"
+    },
+    {
+      "description": "Согласованно обновлять закреплённые версии mise CLI в CI, скрипте подготовки, Docker и документации.",
+      "matchPackageNames": ["jdx/mise"],
+      "groupName": "mise CLI"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Отслеживать закреплённые версии mise CLI вне GitHub Actions.",
+      "managerFilePatterns": [
+        "/^mise\\.toml$/",
+        "/^Dockerfile$/",
+        "/^README\\.md$/",
+        "/^scripts/setup-worktree\\.sh$/"
+      ],
+      "matchStrings": [
+        "min_version\\s*=\\s*\"(?<currentValue>\\d{4}\\.\\d+\\.\\d+)\"",
+        "MISE_VERSION=(?<currentValue>\\d{4}\\.\\d+\\.\\d+)",
+        "Install mise (?<currentValue>\\d{4}\\.\\d+\\.\\d+)",
+        "\\[mise\\]\\(https://mise\\.jdx\\.dev/installing-mise\\.html\\) \\*\\*(?<currentValue>\\d{4}\\.\\d+\\.\\d+)\\*\\*"
+      ],
+      "depNameTemplate": "jdx/mise",
+      "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v?(?<version>\\d{4}\\.\\d+\\.\\d+)$",
+      "versioningTemplate": "semver-coerced"
+    },
+    {
+      "customType": "regex",
+      "description": "Отслеживать версию Rust, выбранную rustup в окружении mise.",
+      "managerFilePatterns": ["/^mise\\.toml$/"],
+      "matchStrings": ["RUSTUP_TOOLCHAIN\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "rust",
+      "datasourceTemplate": "rust-version"
+    },
+    {
+      "customType": "regex",
+      "description": "Отслеживать версию PostgreSQL в настройках демона вместе с инструментом conda.",
+      "managerFilePatterns": ["/^mise\\.toml$/"],
+      "matchStrings": [
+        "\\[daemons\\.postgres\\][^\\[]*?version\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "depNameTemplate": "conda:postgresql",
+      "packageNameTemplate": "postgresql",
+      "datasourceTemplate": "conda"
+    },
+    {
+      "customType": "regex",
+      "description": "Отслеживать теги образов PostgreSQL в тестовых фикстурах и документации.",
+      "managerFilePatterns": [
+        "/^backend/internal/database/integration/main_test\\.go$/",
+        "/^frontend/tests/fixtures\\.ts$/",
+        "/^README\\.md$/"
+      ],
+      "matchStrings": ["postgres:(?<currentValue>\\d+\\.\\d+(?:\\.\\d+)?-alpine)"],
+      "depNameTemplate": "postgres",
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    }
   ]
 }
