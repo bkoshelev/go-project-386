@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.2](https://github.com/bkoshelev/go-project-386/compare/v0.6.1...v0.6.2) (2026-11-13)
+
+
+### Bug Fixes
+
+* **deps:** prioritize security and Go patch update PRs ([#90](https://github.com/bkoshelev/go-project-386/issues/90)) ([7d3f09e](https://github.com/bkoshelev/go-project-386/commit/7d3f09eba6fb2d8f6a9c916456dab93ef8e3b03a))
+
+
+### Documentation
+
+* add interactive project tools map ([#83](https://github.com/bkoshelev/go-project-386/issues/83)) ([bc3ae70](https://github.com/bkoshelev/go-project-386/commit/bc3ae7038535596741e2b4af6d9d823b477bfd62))
+
+
+### Miscellaneous Chores
+
+* **deps:** update dependency go to v1.26.11 ([#91](https://github.com/bkoshelev/go-project-386/issues/91)) ([3aaa0cb](https://github.com/bkoshelev/go-project-386/commit/3aaa0cbb5573a8627b55cb33131657836420dca0))
+* **deps:** update dependency oxlint-tsgolint to v7.0.2007 ([#85](https://github.com/bkoshelev/go-project-386/issues/85)) ([a4084c6](https://github.com/bkoshelev/go-project-386/commit/a4084c617347fa67a2f19fe6d10a0a48885d35ca))
+* **deps:** update dependency vite to v8.3.3 [security] ([#94](https://github.com/bkoshelev/go-project-386/issues/94)) ([8994ef1](https://github.com/bkoshelev/go-project-386/commit/8994ef1d853a3abb513447010c0fd6be0da783e2))
+* **deps:** update module github.com/moby/go-archive to v0.3.0 [security] ([#96](https://github.com/bkoshelev/go-project-386/issues/96)) ([a8bb83a](https://github.com/bkoshelev/go-project-386/commit/a8bb83a58458037b906b77628db40780ab676eeb))
+* **deps:** update module github.com/moby/sys/user to v0.4.1 [security] ([#95](https://github.com/bkoshelev/go-project-386/issues/95)) ([138b3eb](https://github.com/bkoshelev/go-project-386/commit/138b3eb54de22864bb06f463477a4cc3aaf67619))
+* **deps:** update module github.com/oapi-codegen/oapi-codegen/v2 to v2.8.2 ([#92](https://github.com/bkoshelev/go-project-386/issues/92)) ([3b162f8](https://github.com/bkoshelev/go-project-386/commit/3b162f857b2442ac10701466b93f2d1d128943f4))
+
 ## [0.6.1](https://github.com/bkoshelev/go-project-386/compare/v0.6.0...v0.6.1) (2026-11-12)
 
 
