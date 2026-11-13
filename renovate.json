@@ -20,6 +20,12 @@
   "automerge": false,
   "prConcurrentLimit": 4,
   "prHourlyLimit": 2,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "dependencyDashboardApproval": false,
+    "prCreation": "immediate",
+    "automerge": false
+  },
   "packageRules": [
     {
       "description": "Требовать одобрение в панели зависимостей перед созданием PR с обновлением основной версии.",
@@ -40,6 +46,15 @@
       "allowedVersions": ">=1.26.0 <1.27.0",
       "groupName": "Go toolchain",
       "prPriority": 10
+    },
+    {
+      "description": "Создавать PR с patch-обновлениями Go без ожидания лимитов, включая исправления стандартной библиотеки.",
+      "matchManagers": ["gomod", "mise"],
+      "matchDepNames": ["go"],
+      "matchUpdateTypes": ["patch"],
+      "prHourlyLimit": 0,
+      "prConcurrentLimit": 0,
+      "dependencyDashboardApproval": false
     },
     {
       "description": "Согласованно обновлять версии Node.js в mise, nvm и обоих npm-пакетах.",
