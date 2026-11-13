@@ -1,6 +1,7 @@
 import { Button, Checkbox, Stack, Text, Title } from "@mantine/core";
 import { useMachine } from "@xstate/react";
 import { useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import type { WeeklyAvailability } from "../../api/generated";
 import { IntervalEditor } from "../../shared/availability/IntervalEditor";
 import { weeklyAvailabilityMachine } from "./model";
@@ -16,8 +17,10 @@ export type ConfirmedSchedule = {
 
 export function Availability({
   onScheduleChange,
+  children,
 }: {
   onScheduleChange: (schedule: ConfirmedSchedule) => void;
+  children?: ReactNode;
 }) {
   const [state, send] = useMachine(weeklyAvailabilityMachine);
   const formRef = useRef<HTMLFormElement>(null);
@@ -62,6 +65,7 @@ export function Availability({
         </div>
         {timeZone && <Text className="availability-zone">Часовой пояс расписания: {timeZone}</Text>}
       </div>
+      {children}
       {state.matches("loading") && <Text component="output">Загрузка доступности…</Text>}
       {state.matches("loadFailed") && (
         <Stack>

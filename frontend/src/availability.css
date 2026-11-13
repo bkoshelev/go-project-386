@@ -102,6 +102,35 @@
   font-size: 12px;
 }
 
+.meeting-pause-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 24px;
+}
+
+.meeting-pause-row h2 {
+  margin-bottom: 8px;
+}
+
+.meeting-pause-row > button {
+  flex-shrink: 0;
+}
+
+.meeting-pause-success {
+  display: block;
+  padding: 0 24px 16px;
+}
+
+@media (width < 640px) {
+  .meeting-pause-row {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 20px;
+  }
+}
+
 .availability-summary {
   display: flex;
   flex-wrap: wrap;
