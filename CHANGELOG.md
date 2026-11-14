@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/bkoshelev/go-project-386/compare/v0.6.2...v0.7.0) (2026-11-14)
+
+
+### Features
+
+* **frontend:** add calendar-wide meeting pause settings ([#102](https://github.com/bkoshelev/go-project-386/issues/102)) ([bb00479](https://github.com/bkoshelev/go-project-386/commit/bb0047903c77e18d9db07fe5c6e79fdec475df80))
+
 ## [0.6.2](https://github.com/bkoshelev/go-project-386/compare/v0.6.1...v0.6.2) (2026-11-13)
 
 
