@@ -91,16 +91,18 @@ func newTestRouter(t *testing.T, output io.Writer) *gin.Engine {
 
 func TestOnlyImplementedOperationsAreRegistered(t *testing.T) {
 	router := newTestRouter(t, io.Discard)
-	require.Len(t, router.Routes(), 16)
+	require.Len(t, router.Routes(), 17)
 	for _, path := range []string{"/api/bookings"} {
 		response := httptest.NewRecorder()
 		router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, path, nil))
 		require.Equal(t, http.StatusNotFound, response.Code)
 	}
-	// Pre-binding validation must not turn an unimplemented endpoint into a 422.
+	// The implemented availability check validates its request before calling the database.
 	response := httptest.NewRecorder()
-	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/event-types/00000000-0000-0000-0000-000000000000/availability/check", strings.NewReader(`{}`)))
-	require.Equal(t, http.StatusNotFound, response.Code)
+	request := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/api/event-types/00000000-0000-0000-0000-000000000000/availability/check", strings.NewReader(`{}`))
+	request.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(response, request)
+	require.Equal(t, http.StatusUnprocessableEntity, response.Code)
 }
 
 func TestReadinessTracksDatabaseAvailability(t *testing.T) {

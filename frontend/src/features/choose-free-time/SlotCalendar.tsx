@@ -1,9 +1,10 @@
 import { Button, Radio, Stack, Text, Title } from "@mantine/core";
 import { Calendar } from "@mantine/dates";
 import { useMachine } from "@xstate/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import "dayjs/locale/ru";
 import type { AvailableSlot, EventType } from "../../api/generated";
+import { ManualStart } from "./ManualStart";
 import { localDate, windowDates } from "./dates";
 import { freeTimeMachine } from "./model";
 import type { FreeTime } from "./workflows";
@@ -61,9 +62,12 @@ export function SlotCalendar({
       currentDate={state.context.date}
       selected={state.context.selected}
       onDateChange={(date) => send({ type: "dateChanged", date })}
-      onSlotChange={(startsAt) => send({ type: "slotSelected", startsAt })}
+      onSlotChange={(startsAt) =>
+        send(startsAt ? { type: "slotSelected", startsAt } : { type: "clearSelection" })
+      }
       onRefresh={() => send({ type: "refresh" })}
       onContinue={onContinue}
+      onMissing={onMissing}
     />
   );
 }
@@ -76,8 +80,10 @@ function TimePicker({
   onSlotChange,
   onRefresh,
   onContinue,
+  onMissing,
 }: {
   data: FreeTime;
+  onMissing: () => void;
   currentDate: string;
   selected: string;
   onDateChange: (date: string) => void;
@@ -86,6 +92,15 @@ function TimePicker({
   onContinue?: (selection: { event: EventType; slot: AvailableSlot }) => void;
 }) {
   const [month, setMonth] = useState(currentDate);
+  const [manual, setManual] = useState<AvailableSlot | null>(null);
+  const [manualKey, setManualKey] = useState(0);
+  const onManualSelection = useCallback(
+    (slot: AvailableSlot | null) => {
+      setManual(slot);
+      if (selected) onSlotChange("");
+    },
+    [onSlotChange, selected],
+  );
   const dates = windowDates(availability);
   const datesWithSlots = new Set(
     availability.slots.map((slot) => localDate(new Date(slot.startsAt))),
@@ -93,11 +108,12 @@ function TimePicker({
   const slots = availability.slots.filter(
     (slot) => localDate(new Date(slot.startsAt)) === currentDate,
   );
-  const chosen = slots.find((slot) => slot.startsAt === selected);
+  const chosen = manual ?? slots.find((slot) => slot.startsAt === selected);
   return (
     <Stack gap="lg">
       <div className="booking-picker">
         <section className="booking-month" aria-label="Дата встречи">
+          <Title order={4}>1. Выберите дату</Title>
           <Calendar
             classNames={{
               month: "booking-calendar-month",
@@ -121,7 +137,11 @@ function TimePicker({
               "aria-pressed": date === currentDate,
               "aria-describedby": datesWithSlots.has(date) ? "booking-available-day" : undefined,
               "data-has-slots": datesWithSlots.has(date) || undefined,
-              onClick: () => onDateChange(date),
+              onClick: () => {
+                setManual(null);
+                setManualKey((key) => key + 1);
+                onDateChange(date);
+              },
             })}
           />
           <Text id="booking-available-day" className="booking-calendar-legend" size="sm">
@@ -129,6 +149,7 @@ function TimePicker({
           </Text>
         </section>
         <section className="booking-times" aria-label="Время встречи">
+          <Title order={4}>2. Выберите начало</Title>
           <Title order={4} className="booking-date-label">
             {dateLabel.format(new Date(`${currentDate}T12:00:00`))}
           </Title>
@@ -137,7 +158,15 @@ function TimePicker({
           ) : slots.length === 0 ? (
             <Text component="output">На эту дату нет свободного времени</Text>
           ) : (
-            <Radio.Group label="Свободное время" value={selected} onChange={onSlotChange}>
+            <Radio.Group
+              label="Свободное время"
+              value={selected}
+              onChange={(value) => {
+                setManual(null);
+                setManualKey((key) => key + 1);
+                onSlotChange(value);
+              }}
+            >
               <div className="booking-slot-grid">
                 {slots.map((slot) => {
                   const start = new Date(slot.startsAt);
@@ -161,6 +190,14 @@ function TimePicker({
           )}
         </section>
       </div>
+      <ManualStart
+        key={`${currentDate}-${manualKey}`}
+        eventTypeId={event.id}
+        durationMinutes={event.durationMinutes}
+        date={currentDate}
+        onSelection={onManualSelection}
+        onMissing={onMissing}
+      />
       <div className="booking-timezone">
         <Text size="sm">Часовой пояс: {Intl.DateTimeFormat().resolvedOptions().timeZone}</Text>
         <Text size="xs" c="dimmed">
