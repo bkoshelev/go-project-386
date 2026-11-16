@@ -94,11 +94,14 @@ test("ошибки формы сохраняют ввод, фокусируют 
   await name.fill("Тестовая встреча");
   for (const unit of ["minutes", "hours"]) {
     await page.getByLabel("Единица длительности").selectOption(unit);
-    for (const value of ["0", "1.5", unit === "hours" ? "24" : "61", "90"]) {
+    for (const value of ["", "0", "-1", "1.5", unit === "hours" ? "24" : "91"]) {
       await duration.fill(value);
       await save.click();
       await expect(duration).toBeFocused();
       await expect(duration).toHaveAttribute("aria-invalid", "true");
+      await expect(
+        page.getByText(`Введите целое число от 1 до ${unit === "hours" ? 23 : 90}`),
+      ).toBeVisible();
       await expect(duration).toHaveValue(value);
       await expect(name).toHaveValue("Тестовая встреча");
     }
@@ -111,6 +114,9 @@ test("границы длительности вводятся в UI в мину
   for (const [unit, value, minutes] of [
     ["minutes", "1", "1 мин"],
     ["minutes", "60", "60 мин"],
+    ["minutes", "61", "61 мин"],
+    ["minutes", "89", "89 мин"],
+    ["minutes", "90", "90 мин"],
     ["hours", "1", "60 мин"],
     ["hours", "23", "1380 мин"],
   ]) {
@@ -122,7 +128,7 @@ test("границы длительности вводятся в UI в мину
     const item = page.getByRole("listitem").filter({ hasText: `${unit} ${value}` });
     await expect(item).toContainText(minutes);
   }
-  await expect(page.getByRole("listitem")).toHaveCount(4);
+  await expect(page.getByRole("listitem")).toHaveCount(7);
 });
 
 test("сбой БД виден при чтении и записи, ручной повтор восстанавливает сценарий", async ({

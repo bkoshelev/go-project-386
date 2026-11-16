@@ -14,7 +14,7 @@ test("HTTP отклоняет неверные поля и не сохраняе
     [{ name: " \t\n ", durationMinutes: 30 }, "/name"],
     [{ durationMinutes: 30 }, "/name"],
     [{ name: "Встреча" }, "/durationMinutes"],
-    ...[0, -1, 1.5, 61, 90, 1390, 1440].map((durationMinutes) => [
+    ...[0, -1, 1.5, 91, 119, 150, 1390, 1440].map((durationMinutes) => [
       { name: "Встреча", durationMinutes },
       "/durationMinutes",
     ]),
@@ -26,6 +26,16 @@ test("HTTP отклоняет неверные поля и не сохраняе
     const failure = await response.json();
     expect(failure.code).toBe("validation_error");
     expect(failure.fields).toContainEqual(expect.objectContaining({ field }));
+    if (
+      field === "/durationMinutes" &&
+      typeof data === "object" &&
+      "durationMinutes" in data &&
+      typeof data.durationMinutes === "number"
+    ) {
+      expect(failure.fields).toContainEqual(
+        expect.objectContaining({ field, code: "out_of_range" }),
+      );
+    }
   }
   const broken = await request.post("/api/admin/event-types", {
     data: Buffer.from('{"name":'),
@@ -67,6 +77,9 @@ test("созданные типы читаются полностью и сох�
   for (const body of [
     { name: "  Знакомство  ", durationMinutes: 1 },
     { name: "Знакомство", description: "", durationMinutes: 60 },
+    { name: "61 минута", durationMinutes: 61 },
+    { name: "89 минут", durationMinutes: 89 },
+    { name: "90 минут", durationMinutes: 90 },
     { name: "Обсуждение", description: "План встречи", durationMinutes: 120 },
     { name: "Длинная встреча", durationMinutes: 1380 },
   ]) {
@@ -83,8 +96,36 @@ test("созданные типы читаются полностью и сох�
     expect(fetched.status()).toBe(200);
     expect(await fetched.json()).toEqual(item);
   }
-  expect(new Set(saved.map((item) => item.id)).size).toBe(4);
+  expect(new Set(saved.map((item) => item.id)).size).toBe(7);
   await backend.restart();
   expect(await (await request.get("/api/event-types")).json()).toEqual({ items: saved });
   expect(await (await request.get("/api/owner")).json()).toEqual({ fullName: "Александр Иванов" });
+});
+
+test("создание 90 минут не зависит от расписания", async ({ request }) => {
+  expect(
+    (
+      await request.post("/api/admin/scheduling-settings/time-zone", { data: { timeZone: "UTC" } })
+    ).status(),
+  ).toBe(200);
+  const create = () =>
+    request.post("/api/admin/event-types", { data: { name: "90 минут", durationMinutes: 90 } });
+  const closed = await create();
+  expect(closed.status()).toBe(201);
+  const first = await closed.json();
+  expect(
+    (await (await request.get(`/api/event-types/${first.id}/availability`)).json()).slots,
+  ).toEqual([]);
+  const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map(
+    (weekday) => ({ weekday, isBlocked: false, intervals: [{ start: "09:00", end: "10:00" }] }),
+  );
+  expect((await request.put("/api/admin/availability/weekly", { data: { days } })).status()).toBe(
+    200,
+  );
+  const short = await create();
+  expect(short.status()).toBe(201);
+  const second = await short.json();
+  expect(
+    (await (await request.get(`/api/event-types/${second.id}/availability`)).json()).slots,
+  ).toEqual([]);
 });

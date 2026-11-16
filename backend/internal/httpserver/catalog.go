@@ -47,7 +47,7 @@ func eventTypeResponse(row db.EventType) (api.EventType, error) {
 	if row.Description.Valid {
 		item.Description = &row.Description.String
 	}
-	if err := item.DurationMinutes.FromDurationUpToOneHour(row.DurationMinutes); err != nil {
+	if err := item.DurationMinutes.FromDurationUpToNinetyMinutes(row.DurationMinutes); err != nil {
 		return api.EventType{}, fmt.Errorf("encode event duration: %w", err)
 	}
 	return item, nil
@@ -76,7 +76,7 @@ func (h applicationHandler) CreateEventType(ctx context.Context, request api.Cre
 		return nil, errors.New("database is not configured")
 	}
 	body := request.Body
-	minutes, err := body.DurationMinutes.AsDurationUpToOneHour()
+	minutes, err := body.DurationMinutes.AsDurationUpToNinetyMinutes()
 	if err != nil {
 		return nil, fmt.Errorf("decode normalized duration: %w", err)
 	}

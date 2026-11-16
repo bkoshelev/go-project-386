@@ -22,15 +22,15 @@ scalar EventTypeId extends string;
 
 /** Целое число минут, введённое в интерфейсе при выборе единицы «минуты». */
 @minValue(1)
-@maxValue(60)
-scalar DurationUpToOneHour extends int32;
+@maxValue(90)
+scalar DurationUpToNinetyMinutes extends int32;
 
 /**
- * Длительность в минутах после преобразования из 1–60 минут или 1–23 целых часов. Выбранная в
+ * Длительность в минутах после преобразования из 1–90 минут или 1–23 целых часов. Выбранная в
  * интерфейсе единица не сохраняется. Например, 2 часа преобразуются в 120 минут.
  */
 union EventTypeDurationMinutes {
-  minutes: DurationUpToOneHour,
+  minutes: DurationUpToNinetyMinutes,
   hours:
     | 120
     | 180
