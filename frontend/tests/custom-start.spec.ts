@@ -224,7 +224,7 @@ test("запоздалая проверка не выбирает старое �
   await arrival;
   await page.getByLabel("Своё время начала").fill("10:08");
   release();
-  await page.unroute("**/availability/check", { behavior: "wait" });
+  await page.unrouteAll({ behavior: "wait" });
   await expect(page.getByRole("button", { name: "Продолжить" })).toBeDisabled();
   await page.getByRole("button", { name: "Проверить время" }).click();
   await page.getByRole("button", { name: "Продолжить" }).click();
