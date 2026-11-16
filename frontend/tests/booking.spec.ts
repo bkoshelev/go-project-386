@@ -212,37 +212,106 @@ test("отправка блокирует повторы, потерянный �
   request,
 }) => {
   const { start } = await prepareBooking(request);
+  await page.setViewportSize({ width: 320, height: 900 });
   await contactStep(page, start.slice(0, 10));
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
   let writes = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/bookings")
+      writes++;
+  });
   await page.route("**/api/bookings", async (route) => {
-    writes++;
     const response = await route.fetch();
     expect(response.status()).toBe(201);
     await gate;
     await route.abort("failed");
   });
-  await page.getByRole("button", { name: "Забронировать" }).click();
+  await page.getByRole("button", { name: "Забронировать" }).dblclick();
   await expect(page.getByRole("button", { name: "Забронировать" })).toBeDisabled();
   await expect(page.getByRole("textbox", { name: "Имя", exact: true })).toBeDisabled();
   await expect(
     page.getByRole("status").filter({ hasText: "Сохранение бронирования" }),
   ).toBeVisible();
   release();
-  await expect(page.getByRole("alert")).toContainText("Не удалось получить результат бронирования");
+  await expect(page.getByRole("alert")).toContainText(
+    "Встреча могла сохраниться или не сохраниться",
+  );
+  await expect(page.getByRole("alert")).toContainText("повторить отправку");
+  await expect(page.getByRole("alert")).toContainText("выбрать другое время");
+  await expect(page.getByRole("alert")).toContainText("не подтверждает, кому принадлежит");
+  await expect(page.getByRole("alert")).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(320);
   await expect(page.getByRole("textbox", { name: "Имя", exact: true })).toHaveValue("Анна");
   await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toHaveCount(0);
   expect(writes).toBe(1);
   expect((await (await request.get("/api/admin/bookings")).json()).items).toHaveLength(1);
   await page.unroute("**/api/bookings");
+  const conflictResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/bookings",
+  );
   await page.getByRole("button", { name: "Забронировать" }).click();
+  const conflict = await conflictResponse;
+  expect(conflict.status()).toBe(409);
+  expect(await conflict.json()).toMatchObject({ code: "time_occupied" });
   await expect(page.getByRole("alert")).toHaveText("Время уже занято. Выберите другое время.");
   await expect(page.getByRole("heading", { name: "Шаг 2. Дата и время" })).toBeFocused();
-  expect(writes).toBe(1);
+  expect(writes).toBe(2);
   expect((await (await request.get("/api/admin/bookings")).json()).items).toHaveLength(1);
+  await chooseBookingDate(page, start.slice(0, 10));
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await expect(page.getByRole("textbox", { name: "Имя", exact: true })).toHaveValue("Анна");
+  await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
+    "anna@example.com",
+  );
+});
+
+test("потеря первой несохранённой попытки позволяет вручную создать встречу", async ({
+  page,
+  request,
+}) => {
+  const { start } = await prepareBooking(request);
+  await contactStep(page, start.slice(0, 10));
+  let writes = 0;
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/bookings")
+      writes++;
+  });
+  await page.route(
+    "**/api/bookings",
+    async (route) => {
+      await route.abort("failed");
+    },
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Забронировать" }).click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Встреча могла сохраниться или не сохраниться",
+  );
+  await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Имя", exact: true })).toHaveValue("Анна");
+  await expect(page.getByRole("textbox", { name: "Email", exact: true })).toHaveValue(
+    "anna@example.com",
+  );
+  expect(writes).toBe(1);
+  expect((await (await request.get("/api/admin/bookings")).json()).items).toHaveLength(0);
+  const responsePromise = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      new URL(response.url()).pathname === "/api/bookings",
+  );
+  await page.getByRole("button", { name: "Забронировать" }).click();
+  expect((await responsePromise).status()).toBe(201);
+  await expect(page.getByRole("heading", { name: "Встреча подтверждена" })).toBeFocused();
+  expect(writes).toBe(2);
+  const list = await (await request.get("/api/admin/bookings")).json();
+  expect(list.items).toHaveLength(1);
+  expect(list.items[0].guest).toEqual({ name: "Анна", email: "anna@example.com" });
 });
 
 test("ошибки email остаются у поля, корректный адрес без точки в домене принимается", async ({
