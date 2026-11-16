@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.8.0](https://github.com/bkoshelev/go-project-386/compare/v0.7.0...v0.8.0) (2026-11-16)
+
+
+### Features
+
+* **booking:** проверка и бронирование собственного времени ([#106](https://github.com/bkoshelev/go-project-386/issues/106)) ([2e596c1](https://github.com/bkoshelev/go-project-386/commit/2e596c104ad7b1407206e12487aa7f81fbf205f0))
+
+
+### Bug Fixes
+
+* **frontend:** clarify unknown booking outcomes ([#111](https://github.com/bkoshelev/go-project-386/issues/111)) ([7586278](https://github.com/bkoshelev/go-project-386/commit/758627811ba5ec8cbe4833006382b659194707d2))
+
+
+### Miscellaneous Chores
+
+* **agents:** update Matt Pocock skills ([5a6ea78](https://github.com/bkoshelev/go-project-386/commit/5a6ea78155728ea96f19875900f19db985d51a43))
+
 ## [0.7.0](https://github.com/bkoshelev/go-project-386/compare/v0.6.2...v0.7.0) (2026-11-16)
 
 
