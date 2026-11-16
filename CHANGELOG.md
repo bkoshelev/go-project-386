@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/bkoshelev/go-project-386/compare/v0.6.2...v0.7.0) (2026-11-16)
+
+
+### Features
+
+* **booking:** проверка и бронирование собственного времени ([#106](https://github.com/bkoshelev/go-project-386/issues/106)) ([20046a2](https://github.com/bkoshelev/go-project-386/commit/20046a2de801a0eb7fc966938fdc36c0fc5c4a01))
+* **booking:** проверка и бронирование собственного времени ([#106](https://github.com/bkoshelev/go-project-386/issues/106)) ([8fb2596](https://github.com/bkoshelev/go-project-386/commit/8fb2596f0c93c1ac47f5821822d693c73b63d0a9))
+* **frontend:** add calendar-wide meeting pause settings ([#102](https://github.com/bkoshelev/go-project-386/issues/102)) ([bb00479](https://github.com/bkoshelev/go-project-386/commit/bb0047903c77e18d9db07fe5c6e79fdec475df80))
+* **frontend:** show upcoming owner meetings ([#108](https://github.com/bkoshelev/go-project-386/issues/108)) ([0d59121](https://github.com/bkoshelev/go-project-386/commit/0d59121a1ec1a2af4b2bbe57effdd141c50d0c08))
+
 ## [0.6.2](https://github.com/bkoshelev/go-project-386/compare/v0.6.1...v0.6.2) (2026-11-13)
 
 
