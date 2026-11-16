@@ -12,6 +12,7 @@ import {
 import { availabilityCssVariables, availabilityTheme } from "./availabilityTheme";
 import { AvailabilityPage } from "./AvailabilityPage";
 import { Booking } from "./Booking";
+import { UpcomingMeetings } from "./features/browse-upcoming-meetings";
 import { ManageEventTypes } from "./features/manage-event-types";
 
 const pageContainerProps = {
@@ -33,6 +34,12 @@ const pageContainerProps = {
     px: { base: 20, xs: 32, lg: 48 },
     py: { base: 32, sm: 48 },
   },
+  "/admin/meetings": {
+    component: "main",
+    size: "xl",
+    px: { base: "md", sm: "xl" },
+    py: 28,
+  },
   "/book": {
     component: "main",
     className: "booking-page",
@@ -41,14 +48,14 @@ const pageContainerProps = {
     py: { base: 28, sm: 48 },
   },
 } satisfies Record<
-  "/" | "/admin" | "/admin/availability" | "/book",
+  "/" | "/admin" | "/admin/availability" | "/admin/meetings" | "/book",
   ContainerProps & { component: "main" }
 >;
 
 export function App() {
   const path = window.location.pathname;
   const page =
-    path === "/admin" || path === "/admin/availability"
+    path === "/admin" || path === "/admin/availability" || path === "/admin/meetings"
       ? path
       : path.startsWith("/book")
         ? "/book"
@@ -96,9 +103,17 @@ export function App() {
             >
               Доступность
             </Anchor>
+            <Anchor
+              href="/admin/meetings"
+              aria-current={path === "/admin/meetings" ? "page" : undefined}
+            >
+              Предстоящие встречи
+            </Anchor>
           </Group>
         )}
-        {path === "/admin/availability" ? (
+        {path === "/admin/meetings" ? (
+          <UpcomingMeetings />
+        ) : path === "/admin/availability" ? (
           <AvailabilityPage />
         ) : path === "/admin" ? (
           <ManageEventTypes />
