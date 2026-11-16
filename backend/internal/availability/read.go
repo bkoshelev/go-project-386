@@ -70,3 +70,39 @@ func Load(ctx context.Context, queries *db.Queries, eventID uuid.UUID, now time.
 	}
 	return snapshot, nil
 }
+
+// Database opens a transaction for a consistent, non-reserving availability check.
+type Database interface {
+	Begin(context.Context) (pgx.Tx, error)
+}
+
+// Check reads the current calendar under its lock and checks a start without writing a booking.
+func Check(ctx context.Context, database Database, eventID uuid.UUID, startsAt time.Time, now func() time.Time) (slot Slot, reason Reason, err error) {
+	if database == nil {
+		return Slot{}, "", errors.New("database is not configured")
+	}
+	tx, err := database.Begin(ctx)
+	if err != nil {
+		return Slot{}, "", fmt.Errorf("begin availability check: %w", err)
+	}
+	defer func() {
+		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+		if rollbackErr := tx.Rollback(cleanupCtx); rollbackErr != nil && !errors.Is(rollbackErr, pgx.ErrTxClosed) {
+			err = errors.Join(err, fmt.Errorf("rollback availability check: %w", rollbackErr))
+		}
+	}()
+	queries := db.New(tx)
+	if _, err := queries.LockCalendar(ctx); err != nil {
+		return Slot{}, "", fmt.Errorf("lock calendar: %w", err)
+	}
+	snapshot, err := Load(ctx, queries, eventID, now())
+	if err != nil {
+		return Slot{}, "", err
+	}
+	reason = snapshot.Check(startsAt)
+	if reason == "" {
+		slot = Slot{StartsAt: startsAt.UTC(), EndsAt: startsAt.Add(snapshot.Duration).UTC()}
+	}
+	return slot, reason, nil
+}

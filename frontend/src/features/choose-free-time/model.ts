@@ -19,7 +19,7 @@ export const freeTimeMachine = setup({
     input: {} as Input,
     context: {} as Context,
     events: {} as
-      | { type: "refresh" | "cancel" }
+      | { type: "refresh" | "cancel" | "clearSelection" }
       | { type: "eventTypeChanged"; eventTypeId: string }
       | { type: "dateChanged"; date: string }
       | { type: "slotSelected"; startsAt: string },
@@ -75,6 +75,7 @@ export const freeTimeMachine = setup({
     missing: {},
     ready: {
       on: {
+        clearSelection: { actions: assign({ selected: "" }) },
         dateChanged: {
           guard: ({ context, event }) =>
             Boolean(context.data && windowDates(context.data.availability).includes(event.date)),

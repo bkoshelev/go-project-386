@@ -1,4 +1,5 @@
 import {
+  checkEventAvailability,
   getEventAvailability,
   getEventType,
   type EventAvailability,
@@ -28,4 +29,41 @@ export async function readFreeTime(
       return null;
     throw error;
   }
+}
+
+/** Проверяет введённый гостем абсолютный момент, не резервируя интервал. */
+export async function checkFreeTime(
+  eventTypeId: string,
+  startsAt: string,
+  durationMinutes: number,
+  signal: AbortSignal,
+) {
+  const result = (
+    await checkEventAvailability({
+      path: { eventTypeId },
+      body: { startsAt },
+      signal,
+      cache: "no-store",
+      throwOnError: true,
+    })
+  ).data;
+  if (result.available === true) {
+    if (
+      Date.parse(result.slot?.startsAt) !== Date.parse(startsAt) ||
+      Date.parse(result.slot?.endsAt) !== Date.parse(startsAt) + durationMinutes * 60_000
+    )
+      throw new Error("Некорректный интервал проверки");
+  } else if (
+    result.available !== false ||
+    ![
+      "time_occupied",
+      "starts_in_past",
+      "outside_booking_window",
+      "outside_working_hours",
+      "schedule_not_initialized",
+    ].includes(result.reason)
+  ) {
+    throw new Error("Некорректный результат проверки");
+  }
+  return result;
 }

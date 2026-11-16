@@ -17,7 +17,7 @@ body:has(.booking-page) {
 
 .booking-picker {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 175px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -80,8 +80,8 @@ body:has(.booking-page) {
 
 .booking-times {
   min-width: 0;
-  padding-left: 20px;
-  border-left: 1px solid var(--booking-border);
+  padding-top: 20px;
+  border-top: 1px solid var(--booking-border);
 }
 
 .booking-date-label {
@@ -416,12 +416,12 @@ body:has(.booking-page) {
   }
 
   .booking-picker {
-    grid-template-columns: minmax(0, 1fr) 150px;
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
 
   .booking-times {
-    padding-left: 12px;
+    padding-left: 0;
   }
 }
 
@@ -502,4 +502,29 @@ body:has(.booking-page) {
 
 .booking-page .booking-button[data-variant="outline"] {
   border-color: var(--booking-accent);
+}
+
+.booking-manual {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-left: 3px solid var(--booking-accent);
+  background: #f9faf6;
+}
+
+.booking-manual-fields {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.booking-manual-fields > div {
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.booking-manual-result {
+  color: var(--booking-accent);
+  font-weight: 600;
 }
