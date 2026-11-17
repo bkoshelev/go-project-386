@@ -310,15 +310,15 @@ mise daemons start frontend
 # Линтеры, форматирование и проверка контракта
 mise run frontend:check
 
-# Проверка TypeScript и production-сборка
+# Линтинг, проверка типов и production-сборка
 mise run frontend:build
 
 # Сборка и smoke-тест production-версии в Chromium
 mise run frontend:test-smoke
 ```
 
-Для короткого цикла между изменениями используйте `mise run frontend:typecheck` после
-[подготовки клиента](frontend/README.md#быстрая-проверка-типов).
+Для короткого цикла между изменениями используйте `mise run frontend:lint-code` после
+[подготовки клиента](frontend/README.md#быстрая-проверка-кода-и-типов).
 
 Для разработки `mise daemons start frontend` проксирует API к backend согласно
 [frontend/vite.config.ts](frontend/vite.config.ts).
@@ -330,7 +330,7 @@ mise run frontend:test-smoke
 
 | Команда             | Назначение                                                |
 | ------------------- | --------------------------------------------------------- |
-| `mise run frontend:lint-code`    | Проверить JS, TS, JSX и TSX с анализом типов              |
+| `mise run frontend:lint-code`    | Проверить JS, TS, JSX и TSX и ошибки типов              |
 | `mise run frontend:lint-css`     | Проверить обычные CSS-файлы                               |
 | `mise run frontend:lint`         | Последовательно выполнить обе lint-проверки               |
 | `mise run frontend:lint-fix`     | Применить безопасные автоисправления Oxlint и Stylelint   |
