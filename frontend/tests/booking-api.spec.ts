@@ -59,6 +59,36 @@ for (const differentTypes of [false, true]) {
   });
 }
 
+for (const order of ["hour-first", "half-hour-first", "concurrent"] as const) {
+  test(`частично пересекающиеся встречи разных типов: ${order}`, async ({ request }) => {
+    const { events, start } = await prepareBooking(request);
+    const created = await request.post("/api/admin/event-types", {
+      data: { name: "Встреча на час", durationMinutes: 60 },
+    });
+    expect(created.status()).toBe(201);
+    const hourType = await created.json();
+    const hour = booking(hourType.id, start);
+    const halfHour = booking(events[0].id, start.replace("10:00", "10:30"));
+    const [first, second] = order === "half-hour-first" ? [halfHour, hour] : [hour, halfHour];
+    const send = (data: typeof hour) => request.post(bookingPath, { data });
+    const responses =
+      order === "concurrent"
+        ? await Promise.all([send(first), send(second)])
+        : [await send(first), await send(second)];
+
+    expect(responses.map((response) => response.status()).sort((a, b) => a - b)).toEqual([
+      201, 409,
+    ]);
+    if (order !== "concurrent") expect(responses[0].status()).toBe(201);
+    const saved = await responses.find((response) => response.status() === 201)!.json();
+    const conflict = responses.find((response) => response.status() === 409)!;
+    expect(await conflict.json()).toMatchObject({ code: "time_occupied" });
+    const list = await (await request.get(ownerPath)).json();
+    expect(list.items).toHaveLength(1);
+    expect(list.items[0].id).toBe(saved.id);
+  });
+}
+
 test("валидация полей и формата не сохраняет встреч, повтор несохранённой попытки возможен", async ({
   request,
 }) => {
