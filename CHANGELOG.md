@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.0](https://github.com/bkoshelev/go-project-386/compare/v0.8.0...v0.9.0) (2026-11-17)
+
+
+### Features
+
+* **booking:** allow event types up to 90 minutes ([#117](https://github.com/bkoshelev/go-project-386/issues/117)) ([ae09af6](https://github.com/bkoshelev/go-project-386/commit/ae09af6a0897180b7e4449fd301e81b5f021c4c5))
+
+
+### Tests
+
+* **booking:** cover overlapping bookings and API generation ([#119](https://github.com/bkoshelev/go-project-386/issues/119)) ([6e13660](https://github.com/bkoshelev/go-project-386/commit/6e136608a01577de9078e6dc3924c9c9986cb1fc))
+
+
+### Miscellaneous Chores
+
+* **agents:** add statechart skill ([d4ac7e3](https://github.com/bkoshelev/go-project-386/commit/d4ac7e34251bf38286a993a96b07b3c605fdfa2c))
+* prepare free Render demo ([#120](https://github.com/bkoshelev/go-project-386/issues/120)) ([db67938](https://github.com/bkoshelev/go-project-386/commit/db67938b4700665a1eacda7428e53b22da78353d))
+
 ## [0.8.0](https://github.com/bkoshelev/go-project-386/compare/v0.7.0...v0.8.0) (2026-11-16)
 
 
