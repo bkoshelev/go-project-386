@@ -1,0 +1,30 @@
+{
+  "name": "xstate-v6-booking-experiment",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test booking.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test:browser": "playwright test",
+    "build": "vite build",
+    "complexity": "node complexity.cjs"
+  },
+  "dependencies": {
+    "@xstate/react": "7.0.0-beta.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "xstate": "6.0.0-beta.3",
+    "xstate-v5": "npm:xstate@5.33.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "24.13.4",
+    "@types/react": "19.2.11",
+    "@types/react-dom": "19.2.3",
+    "tsx": "4.21.0",
+    "typescript": "7.0.2",
+    "vite": "8.3.3"
+  },
+  "packageManager": "pnpm@12.4.2"
+}
