@@ -200,17 +200,12 @@ description = "Показать состояние миграций в DATABASE_
 dir = "{{ config_root }}/backend"
 run = 'go run ./cmd/migrate -dsn "${DATABASE_URL:?Set DATABASE_URL}" status'
 
-[tasks."frontend:typecheck"]
-description = "Проверить TypeScript с уже сгенерированным API-клиентом (из frontend/package.json: scripts.typecheck)"
-dir = "{{ config_root }}/frontend"
-run = "pnpm exec tsc -b"
-
 [tasks."frontend:build"]
-description = "Сгенерировать клиент, проверить TypeScript и собрать frontend (из frontend/package.json: scripts.build)"
+description = "Сгенерировать клиент, проверить код и типы и собрать frontend (из frontend/package.json: scripts.build)"
 dir = "{{ config_root }}/frontend"
 run = [
   { task = "api:generate" },
-  { task = "frontend:typecheck" },
+  { task = "frontend:lint-code" },
   "pnpm exec vite build",
 ]
 

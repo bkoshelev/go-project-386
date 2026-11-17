@@ -35,7 +35,7 @@
 | --- | --- | --- |
 | [ESLint](https://eslint.org/) + [typescript-eslint](https://typescript-eslint.io/getting-started/typed-linting/) | JS/TS и анализ с информацией о типах | Рассмотренная альтернатива Oxlint |
 | [React Hooks](https://react.dev/reference/eslint-plugin-react-hooks) и [jsx-a11y](https://github.com/jsx-eslint/eslint-plugin-jsx-a11y) | Hooks и статическая доступность JSX в экосистеме ESLint | Использовать встроенные правила Oxlint, отдельные ESLint-плагины не устанавливать |
-| [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) + [oxlint-tsgolint](https://oxc.rs/docs/guide/usage/linter/type-aware.html) | JS/TS, React, Hooks, JSX-доступность и анализ типов | Выбраны |
+| [Oxlint](https://oxc.rs/docs/guide/usage/linter.html) + [tsrs](https://oxc.rs/docs/guide/usage/linter/type-aware.html) | JS/TS, React, Hooks, JSX-доступность и анализ типов | Выбраны |
 | [Biome](https://biomejs.dev/linter/) | Альтернативный основной линтер | Не добавлять |
 | [Stylelint](https://stylelint.io/) + stylelint-config-standard | Проверка CSS | Выбраны |
 | [Prettier](https://prettier.io/docs/comparison) | Форматирование | Рассмотренная альтернатива Oxfmt |
@@ -48,7 +48,7 @@
 
 ### Инструменты и конфигурация
 
-- Добавить `oxlint`, `oxlint-tsgolint`, `oxfmt`, `stylelint` и
+- Добавить `oxlint`, `tsrs`, `oxfmt`, `stylelint` и
   `stylelint-config-standard` в devDependencies frontend.
 - Выбрать последние стабильные совместимые версии на момент реализации,
   закрепить точные номера и обновить lock-файл закреплённым pnpm.
@@ -74,7 +74,8 @@
 - Добавить отдельный TypeScript-проект для Playwright-тестов с `noEmit`
   и ссылкой из корневого frontend-tsconfig. Анализ типов должен охватывать
   приложение, тесты и конфигурационные TS-файлы.
-- Существующую проверку `tsc -b` в сборке сохранить. Oxlint не заменяет её.
+- Отдельный `tsc -b` заменён диагностикой компилятора в Oxlint через tsrs;
+  см. [спецификацию перехода](oxlint-tsrs.md).
 - Stylelint проверяет обычные CSS-файлы frontend. Поддержку CSS-in-JS и SCSS
   в этой задаче не добавлять.
 - Oxfmt форматирует JS/TS/JSX/TSX, CSS, HTML и JSON/JSONC внутри frontend,
