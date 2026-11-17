@@ -30,10 +30,10 @@ func TestEmbeddedContractIsComplete(t *testing.T) {
 }
 
 func TestGeneratedDurationUnionIsJSONNumber(t *testing.T) {
-	for _, minutes := range []int32{1, 30, 60, 120, 1380} {
+	for _, minutes := range []int32{1, 30, 60, 61, 90, 120, 1380} {
 		var duration EventTypeDurationMinutes
-		if minutes <= 60 {
-			require.NoError(t, duration.FromDurationUpToOneHour(minutes))
+		if minutes <= 90 {
+			require.NoError(t, duration.FromDurationUpToNinetyMinutes(minutes))
 		} else {
 			require.NoError(t, duration.FromEventTypeDurationMinutes1(EventTypeDurationMinutes1(minutes)))
 		}

@@ -13,7 +13,7 @@ type CreationInput = { onCreated: () => void };
 type CreationContext = CreationInput & { draft: Draft; errors: FieldErrors };
 
 export function getDurationLimit(unit: Draft["unit"]) {
-  return unit === "hours" ? 23 : 60;
+  return unit === "hours" ? 23 : 90;
 }
 
 function validate(draft: Draft): FieldErrors {

@@ -342,3 +342,34 @@ test("ошибки email остаются у поля, корректный ад
   expect(list.items).toHaveLength(1);
   expect(list.items[0].guest.email).toBe("anna@localhost");
 });
+
+test("гость бронирует встречу на 90 минут", async ({ page, request }) => {
+  const { start } = await prepareBooking(request);
+  const created = await request.post("/api/admin/event-types", {
+    data: { name: "Девяносто минут", durationMinutes: 90 },
+  });
+  expect(created.status()).toBe(201);
+  await page.goto("/book");
+  await page.getByRole("radio", { name: "Девяносто минут", exact: true }).check();
+  await page.getByRole("button", { name: "Выбрать время" }).click();
+  await chooseBookingDate(page, start.slice(0, 10));
+  await page.getByRole("radio").first().check();
+  await page.getByRole("button", { name: "Продолжить" }).click();
+  await page.getByRole("textbox", { name: "Имя", exact: true }).fill("Анна");
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill("anna@example.com");
+  await page.getByRole("button", { name: "Забронировать" }).click();
+  const confirmation = page.getByRole("region", { name: "Подтверждение встречи" });
+  await expect(confirmation).toContainText("Девяносто минут");
+  const list = await (await request.get("/api/admin/bookings")).json();
+  expect(list.items).toHaveLength(1);
+  expect(Date.parse(list.items[0].endsAt) - Date.parse(list.items[0].startsAt)).toBe(90 * 60_000);
+  const formatter = new Intl.DateTimeFormat("ru-RU", { dateStyle: "long", timeStyle: "short" });
+  const expectedStart = formatter.format(new Date(list.items[0].startsAt));
+  const expectedEnd = formatter.format(new Date(list.items[0].endsAt));
+  await expect(confirmation).toContainText(`Начало: ${expectedStart}`);
+  await expect(confirmation).toContainText(`Окончание: ${expectedEnd}`);
+  await page.goto("/admin/meetings");
+  await expect(page.getByText("Девяносто минут", { exact: true })).toBeVisible();
+  await expect(page.getByText(`Начало: ${expectedStart}`)).toBeVisible();
+  await expect(page.getByText(`Окончание: ${expectedEnd}`)).toBeVisible();
+});

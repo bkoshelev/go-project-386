@@ -243,3 +243,42 @@ test("запоздалая проверка не выбирает старое �
     "anna@example.com",
   );
 });
+
+test("90 минут помещаются до закрытия, а 16:31 — нет", async ({ request }) => {
+  const { week, start } = await prepareBooking(request);
+  const created = await request.post("/api/admin/event-types", {
+    data: { name: "90 минут", durationMinutes: 90 },
+  });
+  expect(created.status()).toBe(201);
+  const event = await created.json();
+  week.days.forEach((day) => (day.intervals = [{ start: "09:00", end: "18:00" }]));
+  expect((await request.put("/api/admin/availability/weekly", { data: week })).status()).toBe(200);
+  const date = start.slice(0, 10);
+  const availability = await (
+    await request.get(`/api/event-types/${event.id}/availability`)
+  ).json();
+  expect(availability.slots).toContainEqual({
+    startsAt: `${date}T16:30:00Z`,
+    endsAt: `${date}T18:00:00Z`,
+  });
+  expect(availability.slots).not.toContainEqual(
+    expect.objectContaining({ startsAt: `${date}T16:45:00Z` }),
+  );
+  const path = `/api/event-types/${event.id}/availability/check`;
+  const valid = `${date}T16:30:00Z`;
+  const invalid = `${date}T16:31:00Z`;
+  expect(await (await request.post(path, { data: { startsAt: valid } })).json()).toEqual({
+    available: true,
+    slot: { startsAt: valid, endsAt: `${date}T18:00:00Z` },
+  });
+  expect((await (await request.post(path, { data: { startsAt: invalid } })).json()).available).toBe(
+    false,
+  );
+  const payload = (startsAt: string) => ({
+    eventTypeId: event.id,
+    startsAt,
+    guest: { name: "Анна", email: "anna@example.com" },
+  });
+  expect((await request.post("/api/bookings", { data: payload(invalid) })).status()).toBe(409);
+  expect((await request.post("/api/bookings", { data: payload(valid) })).status()).toBe(201);
+});

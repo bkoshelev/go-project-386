@@ -35,7 +35,7 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 
 	applied, err := provider.Up(ctx)
 	require.NoError(t, err)
-	require.Len(t, applied, 5)
+	require.Len(t, applied, 6)
 	assert.EqualValues(t, 1, applied[0].Source.Version)
 	assert.EqualValues(t, 2, applied[1].Source.Version)
 	var relation string
@@ -46,19 +46,45 @@ func TestMigrationsUpRepeatDownUp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, applied, "a repeated up must not apply the migration again")
 
+	// Upgrade an existing schema containing an event type and a booking.
+	_, err = provider.Down(ctx)
+	require.NoError(t, err)
+	_, err = sqlDB.ExecContext(ctx, `WITH event AS (
+		INSERT INTO event_types (name, duration_minutes) VALUES ('existing', 60) RETURNING id
+	) INSERT INTO bookings (event_type_id, starts_at, ends_at, guest_name, guest_email)
+	SELECT id, '2030-01-01 09:00Z', '2030-01-01 10:00Z', 'Anna', 'anna@example.com' FROM event`)
+	require.NoError(t, err)
+	_, err = provider.Up(ctx)
+	require.NoError(t, err)
+	var bookingCount int
+	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT count(*) FROM bookings JOIN event_types ON event_types.id = bookings.event_type_id WHERE event_types.duration_minutes = 60").Scan(&bookingCount))
+	assert.Equal(t, 1, bookingCount)
+
+	// New values prevent rollback atomically and leave the row intact.
+	_, err = sqlDB.ExecContext(ctx, "INSERT INTO event_types (name, duration_minutes) VALUES ('new', 90)")
+	require.NoError(t, err)
+	_, err = provider.Down(ctx)
+	require.Error(t, err)
+	var count int
+	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT count(*) FROM event_types WHERE duration_minutes IN (60, 90)").Scan(&count))
+	assert.Equal(t, 2, count)
+	_, err = sqlDB.ExecContext(ctx, "DELETE FROM event_types WHERE duration_minutes = 90")
+	require.NoError(t, err)
 	reverted, err := provider.Down(ctx)
 	require.NoError(t, err)
-	assert.EqualValues(t, 5, reverted.Source.Version)
-	var missing bool
-	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'scheduling_settings' AND column_name = 'date_availability')").Scan(&missing))
-	assert.True(t, missing, "down must remove the date availability column")
+	assert.EqualValues(t, 6, reverted.Source.Version)
+	_, err = sqlDB.ExecContext(ctx, "INSERT INTO event_types (name, duration_minutes) VALUES ('invalid', 90)")
+	require.Error(t, err)
+	require.NoError(t, sqlDB.QueryRowContext(ctx, "SELECT count(*) FROM event_types WHERE duration_minutes = 60").Scan(&count))
+	assert.Equal(t, 1, count)
 
 	applied, err = provider.Up(ctx)
 	require.NoError(t, err)
 	require.Len(t, applied, 1)
 	status, err := provider.Status(ctx)
 	require.NoError(t, err)
-	require.Len(t, status, 5)
+	require.Len(t, status, 6)
+	assert.Equal(t, goose.StateApplied, status[5].State)
 	assert.Equal(t, goose.StateApplied, status[4].State)
 	assert.Equal(t, goose.StateApplied, status[3].State)
 	assert.Equal(t, goose.StateApplied, status[2].State)
