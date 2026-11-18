@@ -410,21 +410,21 @@ mise run frontend:test-smoke
 | `mise run frontend:format`       | Отформатировать поддерживаемые frontend-файлы через Oxfmt |
 | `mise run frontend:format-check` | Проверить форматирование без изменения файлов             |
 
-Исправления форматирования и линтеров запускаются только явно. Общая проверка
-и CI перезаписывают сохраняемые Go-файлы генерации API перед сравнением с индексом.
+Исправления форматирования и линтеров запускаются только явно. Задача `mise run checks`
+и одноимённый job CI перезаписывают сохраняемые Go-файлы генерации API перед сравнением с индексом.
 Настройки форматирования принадлежат [Oxfmt config](frontend/.oxfmtrc.jsonc).
 Ограничения статических проверок и правила подавлений — в
 [инструкции frontend](frontend/README.md#команды-качества).
 
 ### Бэкенд
 
-Команда `mise run check` параллельно выполняет проверку свежести Go API,
-`backend:check`, `frontend:check`, `frontend:test-smoke` и `container:test`.
-Для полного набора нужны установленные зависимости, работающий Docker
-и браузер Playwright (в CI используется предустановленный Chrome). Генерация OpenAPI,
-Go API и SDK выполняется по одному разу; Go-файлы сравниваются с индексом Git,
-поэтому незакоммиченные изменения в них могут привести к ошибке. При ошибке mise останавливает запуск оставшихся задач и может прервать уже
-выполняющиеся проверки; зависимые от неудачной генерации задачи не запускаются. CI запускает ту же команду в одном job.
+Команда `mise run check` выполняет статические проверки TypeSpec, frontend и
+backend. `mise run checks` отдельно проверяет свежесть Go API и sqlc.
+`mise run backend:test-ci` запускает vet, обычные тесты и сборку;
+`mise run frontend:test-smoke` собирает frontend и запускает Playwright.
+Для интеграционных и браузерных тестов нужны Docker и браузер Playwright.
+CI выполняет эти четыре группы независимо. Ночью и вручную отдельно выполняются
+`backend:test-race`, `backend:vuln` и `container:test`.
 
 Backend-команды имеют префикс `backend:`:
 
@@ -444,13 +444,16 @@ mise run backend:lint-fix
 # Проверить вызываемые известные уязвимости
 mise run backend:vuln
 
-# Все тесты, включая PostgreSQL в Docker, с детектором гонок
+# Все тесты, включая PostgreSQL в Docker
 mise run backend:test
+
+# Тот же набор с детектором гонок
+mise run backend:test-race
 
 # Тесты без Docker, также с детектором гонок
 mise run backend:test-unit
 
-# Выполнить lint, проверку генерации, vet, race-тесты, сборку и проверку уязвимостей
+# Статические проверки backend
 mise run backend:check
 ```
 
@@ -530,7 +533,7 @@ HTTP-сервер подключается к БД и применяет миг�
 [ADR-0008](docs/adr/0008-backend-liveness-endpoint.md), а `/readyz` отдельно
 проверяет доступность БД. Порядок запуска описан в
 [ADR-0016](docs/adr/0016-migrations-at-container-startup.md).
-Для полного `mise run backend:test` и `mise run backend:check` требуется работающий Docker Engine
+Для полного `mise run backend:test` и `mise run backend:test-race` требуется работающий Docker Engine
 или Docker Desktop с Linux-контейнерами и доступом к Docker Hub при первой
 загрузке образов. В CI используется Docker на GitHub Actions Ubuntu runner.
 Недоступность Docker, ошибка запуска БД или очистки завершают тесты ошибкой.
@@ -578,8 +581,8 @@ mise run backend:sqlc-generate
 mise run backend:sqlc-check
 ```
 
-Генерация и её проверка выполняются без Docker и запущенной БД. `mise run backend:check`
-и backend CI включают проверку генерации; она обнаруживает изменённые,
+Генерация и её проверка выполняются без Docker и запущенной БД. `mise run checks`
+и отдельная группа CI включают проверку генерации; она обнаруживает изменённые,
 отсутствующие и лишние файлы.
 
 Миграции встроены в общий Go-пакет; тесты и `cmd/migrate` используют одни

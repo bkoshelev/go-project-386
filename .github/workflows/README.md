@@ -4,14 +4,17 @@ After completing all the steps in the project, automatic tests will become avail
 
 The hexlet-check.yml file is responsible for running these tests - do not delete this file, edit it, or rename the repository.
 
-## Общие проверки
+## Проверки CI
 
-`check.yml` на push в `main` и события pull request запускает `mise run check`
-в одном job. Он подготавливает инструменты и зависимости, проверяет доступность
-Docker и Chrome. Команда включает свежесть Go API, backend, frontend, браузерные
-тесты и контейнерный smoke; независимые ветки выполняются
-параллельно. При ошибке mise останавливает оставшиеся задачи и может прервать
-выполняющиеся проверки. При ошибке артефакт
-`check-diagnostics` содержит доступные контейнерные логи и результаты Playwright.
-Локально требуется Docker и Chromium из Playwright. Подробности контейнерного
-smoke: [инструкция запуска](../../docs/runbooks/production-environment.md).
+На PR и push в main `check.yml` независимо запускает `lint` (`mise run check`),
+`checks` (`mise run checks`), `test` (`mise run backend:test-ci`) и
+`test-frontend` (`mise run frontend:test-smoke`). Итоговый `check` успешен только
+при успехе всех четырёх. Новый PR-запуск отменяет прежний; выполняющиеся запуски
+main не отменяются. Отчёт доступных job сохраняется на 7 дней; собственное время
+завершения агрегатора доступно только после его окончания через GitHub API.
+Диагностика Playwright при ошибке сохраняется на 7 дней.
+
+`nightly.yml` ежедневно в 02:17 UTC и вручную независимо запускает
+`backend:vuln`, `backend:test-race` и `container:test`. Выполняющийся ночной
+запуск не отменяется новым. При сбое контейнерная диагностика хранится 7 дней.
+Подробности: [production smoke](../../docs/runbooks/production-environment.md).

@@ -1,0 +1,121 @@
+{
+  "rows": [
+    {
+      "sha": "e66e8fcac483fd3aec4ff2abb3f07507cf8bc6ac",
+      "created_at": "2026-11-17T22:13:26Z",
+      "completed_at": "2026-11-17T22:16:55Z",
+      "seconds": 209,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/44187886198",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/44187886075",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/44187886022"
+      }
+    },
+    {
+      "sha": "b5ba9b648fe24eebeac43cfe71a272e6da63951d",
+      "created_at": "2026-11-17T18:37:50Z",
+      "completed_at": "2026-11-17T18:40:44Z",
+      "seconds": 174,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/44149924737",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/44149924772",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/44149924987"
+      }
+    },
+    {
+      "sha": "147a8804bfc8bbec187185a8ab10a11068fa5683",
+      "created_at": "2026-11-17T17:10:02Z",
+      "completed_at": "2026-11-17T17:13:10Z",
+      "seconds": 188,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/44133941790",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/44133941780",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/44133941563"
+      }
+    },
+    {
+      "sha": "bfb1bcba7eddfc636c36eed2a311c1c2f1da6060",
+      "created_at": "2026-11-17T16:47:37Z",
+      "completed_at": "2026-11-17T16:50:31Z",
+      "seconds": 174,
+      "runs": {
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/44129790011",
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/44129790015",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/44129790017"
+      }
+    },
+    {
+      "sha": "5e1c0c131f558ca32ccc98340f71d4bab7a12c61",
+      "created_at": "2026-11-17T12:52:52Z",
+      "completed_at": "2026-11-17T12:56:01Z",
+      "seconds": 189,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/44087284878",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/44087285382",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/44087285216"
+      }
+    },
+    {
+      "sha": "c4c2e0b83cf8ec87e563ec5aa0ce6c71084821a3",
+      "created_at": "2026-11-16T17:09:33Z",
+      "completed_at": "2026-11-16T17:14:00Z",
+      "seconds": 267,
+      "runs": {
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/43915377729",
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/43915377378",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/43915377493"
+      }
+    },
+    {
+      "sha": "f8c2ad81f6c42ab74124f0c8b775421c16e3377d",
+      "created_at": "2026-11-16T17:02:51Z",
+      "completed_at": "2026-11-16T17:06:23Z",
+      "seconds": 212,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/43914147138",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/43914147360",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/43914147237"
+      }
+    },
+    {
+      "sha": "734dd3ba5758d665d4ba206dcbb5b12dce3c1330",
+      "created_at": "2026-11-16T15:53:45Z",
+      "completed_at": "2026-11-16T15:56:36Z",
+      "seconds": 171,
+      "runs": {
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/43901397207",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/43901396919",
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/43901396920"
+      }
+    },
+    {
+      "sha": "34440334fa3941723ac3a95df9ece305dd0399dd",
+      "created_at": "2026-11-16T15:49:04Z",
+      "completed_at": "2026-11-16T15:52:21Z",
+      "seconds": 197,
+      "runs": {
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/43900516510",
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/43900516452",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/43900516833"
+      }
+    },
+    {
+      "sha": "46d5326f72c0c1a9b2dd7d2bfe0d5ca4864968cc",
+      "created_at": "2026-11-16T15:09:11Z",
+      "completed_at": "2026-11-16T15:12:20Z",
+      "seconds": 189,
+      "runs": {
+        "backend": "https://github.com/bkoshelev/go-project-386/actions/runs/43893296465",
+        "container": "https://github.com/bkoshelev/go-project-386/actions/runs/43893296491",
+        "frontend": "https://github.com/bkoshelev/go-project-386/actions/runs/43893296388"
+      }
+    }
+  ],
+  "average_seconds": 197,
+  "threshold_seconds": 216.7,
+  "measured_at": "2026-11-18",
+  "metric": "min(workflow created_at) to max(job completed_at), seconds",
+  "event": "pull_request",
+  "excluded_sha": "159d688389b6a4e972d20798dcb7a98b5f149b11",
+  "exclusion_reason": "User Q9 chose to exclude the run with about 76 minutes between workflow creation and job creation; replaced with next successful complete set."
+}
