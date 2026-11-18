@@ -1,0 +1,12 @@
+{
+  "sha": "ce43633a992db7c8513531a38b788e6c5f87a922",
+  "workflow_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44267393718",
+  "event": "pull_request",
+  "created_at": "2026-11-18T08:29:16Z",
+  "last_job_completed_at": "2026-11-18T08:34:48Z",
+  "elapsed_seconds": 332,
+  "conclusion": "success",
+  "baseline_mean_seconds": 197.0,
+  "threshold_seconds": 216.7,
+  "frontend_browser_seconds": 278.24
+}

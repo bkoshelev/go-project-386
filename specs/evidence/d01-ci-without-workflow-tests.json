@@ -1,0 +1,12 @@
+{
+  "sha": "da233fde527f46c03e6ec5033dce3eb9d059bdac",
+  "workflow_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44264601552",
+  "event": "pull_request",
+  "created_at": "2026-11-18T08:09:36Z",
+  "last_job_completed_at": "2026-11-18T08:14:04Z",
+  "elapsed_seconds": 268,
+  "conclusion": "success",
+  "baseline_mean_seconds": 197.0,
+  "threshold_seconds": 216.7,
+  "scope_change": "scripts/tests and workflow:test removed at user request"
+}
