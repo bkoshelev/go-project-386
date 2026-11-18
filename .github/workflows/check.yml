@@ -39,6 +39,7 @@ jobs:
       - run: mise run backend:deps
       - name: Run checks
         run: mise run check 2>&1 | tee job.log
+      - run: mise run ci:test
       - name: Upload failure log
         if: failure()
         uses: actions/upload-artifact@v6
@@ -130,6 +131,7 @@ jobs:
     needs: [lint, checks, test, test-frontend]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
       - name: Record available job data
         env:
           GH_TOKEN: ${{ github.token }}
@@ -148,5 +150,4 @@ jobs:
       - name: Check required results
         env:
           RESULTS: ${{ toJSON(needs) }}
-        run: |
-          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")'
+        run: bash .github/scripts/check-results.sh

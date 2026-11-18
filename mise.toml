@@ -313,3 +313,7 @@ run = "git diff --exit-code -- backend/internal/api/models.gen.go backend/intern
 [tasks."check:frontend-quality"]
 depends = ["api:generate-client"]
 run = [{ task = "frontend:check-generated" }]
+
+[tasks."ci:test"]
+description = "Проверить поведение статуса CI и ошибки команд"
+run = "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .github/tests -v"
