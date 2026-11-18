@@ -295,4 +295,25 @@ run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --for
 
 [tasks.check]
 description = "Параллельно выполнить полный набор проверок проекта"
-run = "bash scripts/check.sh"
+depends = ["api:check", "check:go-api", "check:backend", "check:container", "check:frontend"]
+
+[tasks."check:go-api"]
+description = "Проверить свежесть сгенерированного Go API"
+depends = ["backend:api-generate-code"]
+run = "git diff --exit-code -- backend/internal/api/models.gen.go backend/internal/api/server.gen.go"
+
+[tasks."check:backend"]
+depends = ["backend:api-generate-code"]
+run = [{ task = "backend:check" }]
+
+[tasks."check:container"]
+depends = ["backend:api-generate-code"]
+run = [{ task = "container:test" }]
+
+[tasks."check:frontend-quality"]
+depends = ["api:generate-client"]
+run = [{ task = "frontend:check-generated" }]
+
+[tasks."check:frontend"]
+depends = ["check:frontend-quality"]
+run = [{ task = "frontend:build-generated" }, { task = "frontend:test" }]

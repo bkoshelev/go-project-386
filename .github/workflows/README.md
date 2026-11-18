@@ -10,7 +10,8 @@ The hexlet-check.yml file is responsible for running these tests - do not delete
 в одном job. Он подготавливает инструменты и зависимости, проверяет доступность
 Docker и Chrome. Команда включает свежесть Go API, backend, frontend, браузерные
 тесты и контейнерный smoke; независимые ветки выполняются
-параллельно и не отменяются при ошибке другой ветки. При ошибке артефакт
+параллельно. При ошибке mise останавливает оставшиеся задачи и может прервать
+выполняющиеся проверки. При ошибке артефакт
 `check-diagnostics` содержит доступные контейнерные логи и результаты Playwright.
 Локально требуется Docker и Chromium из Playwright. Подробности контейнерного
 smoke: [инструкция запуска](../../docs/runbooks/production-environment.md).
