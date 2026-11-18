@@ -4,11 +4,13 @@ After completing all the steps in the project, automatic tests will become avail
 
 The hexlet-check.yml file is responsible for running these tests - do not delete this file, edit it, or rename the repository.
 
-## Контейнерный smoke
+## Общие проверки
 
-`container.yml` на push в `main` и события pull request запускает `mise run container:test`: собирает
-единый образ, проверяет его с отдельной PostgreSQL и предустановленным на runner
-Google Chrome, удаляет изолированные ресурсы. Браузер запускается на runner,
-вне контейнера приложения; локальный запуск использует Chromium из Playwright.
-При сбое маскированные логи и браузерная диагностика
-доступны в artifact `container-smoke`. Подробности: [инструкция запуска](../../docs/runbooks/production-environment.md).
+`check.yml` на push в `main` и события pull request запускает `mise run check`
+в одном job. Он подготавливает инструменты и зависимости, проверяет доступность
+Docker и Chrome. Команда включает свежесть Go API, backend, frontend, браузерные
+тесты, контейнерный smoke и тесты команд окружения; независимые ветки выполняются
+параллельно и не отменяются при ошибке другой ветки. При ошибке артефакт
+`check-diagnostics` содержит доступные контейнерные логи и результаты Playwright.
+Локально требуется Docker и Chromium из Playwright. Подробности контейнерного
+smoke: [инструкция запуска](../../docs/runbooks/production-environment.md).

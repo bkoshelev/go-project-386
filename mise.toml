@@ -101,8 +101,12 @@ run = "pnpm exec tsp compile ."
 
 [tasks."api:generate"]
 description = "Сгенерировать OpenAPI и Fetch-клиент (из api/package.json: scripts.generate)"
+depends = ["api:generate-client"]
+
+[tasks."api:generate-client"]
+depends = ["api:build"]
 dir = "{{ config_root }}/api"
-run = [{ task = "api:build" }, "pnpm exec openapi-ts"]
+run = "pnpm exec openapi-ts"
 
 [tasks."api:check"]
 description = "Проверить форматирование и компиляцию TypeSpec (из api/package.json: scripts.check)"
@@ -119,9 +123,12 @@ run = 'pnpm exec tsp format "**/*.tsp"'
 
 [tasks."backend:api-generate"]
 description = "Обновить сохраняемые в Git Go-модели и маршруты API (из Makefile: api-generate)"
+depends = ["backend:api-generate-code"]
+
+[tasks."backend:api-generate-code"]
+depends = ["api:build"]
 dir = "{{ config_root }}/backend"
 run = [
-  { task = "api:build" },
   "go tool oapi-codegen --config oapi-models.yaml ../api/generated/openapi.yaml",
   "go tool oapi-codegen --config oapi-server.yaml ../api/generated/openapi.yaml",
 ]
@@ -207,9 +214,12 @@ run = "pnpm exec tsc -b"
 
 [tasks."frontend:build"]
 description = "Сгенерировать клиент, проверить TypeScript и собрать frontend (из frontend/package.json: scripts.build)"
+depends = ["api:generate-client"]
+run = [{ task = "frontend:build-generated" }]
+
+[tasks."frontend:build-generated"]
 dir = "{{ config_root }}/frontend"
 run = [
-  { task = "api:generate" },
   { task = "frontend:typecheck" },
   "pnpm exec vite build",
 ]
@@ -248,9 +258,14 @@ run = "pnpm exec oxfmt --check ."
 
 [tasks."frontend:check"]
 description = "Проверить контракт, генерацию клиента, линтеры и форматирование (из frontend/package.json: scripts.check)"
+depends = ["api:generate-client"]
 run = [
   { task = "api:check" },
-  { task = "api:generate" },
+  { task = "frontend:check-generated" },
+]
+
+[tasks."frontend:check-generated"]
+run = [
   { task = "frontend:lint" },
   { task = "frontend:format-check" },
 ]
@@ -267,7 +282,8 @@ run = "pnpm exec playwright test"
 
 [tasks."frontend:test-smoke"]
 description = "Собрать frontend и запустить браузерные smoke-тесты; нужен Docker (из frontend/package.json: scripts.test:smoke)"
-run = [{ task = "frontend:build" }, { task = "frontend:test" }]
+depends = ["frontend:build"]
+run = [{ task = "frontend:test" }]
 
 [tasks."container:test"]
 description = "Собрать production-образ и проверить его с отдельной PostgreSQL (из Makefile: test-container)"
@@ -278,12 +294,8 @@ description = "Установить локальный commit-msg hook репо�
 run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --force-local; fi'
 
 [tasks.check]
-description = "Проверить качество, сборку и браузерные сценарии backend/frontend (из scripts/setup-worktree.sh: SETUP_VERIFY=1)"
-run = [
-  { task = "backend:check" },
-  { task = "frontend:check" },
-  { task = "frontend:test-smoke" },
-]
+description = "Параллельно выполнить полный набор проверок проекта"
+run = "bash scripts/check.sh"
 
 [tasks."workflow:test"]
 description = "Проверить поведение команд окружения разработки (новая задача)"
