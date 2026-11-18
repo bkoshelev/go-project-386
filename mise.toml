@@ -6,6 +6,7 @@ experimental = true
 lockfile = true
 lockfile_platforms = ["linux-x64", "linux-arm64", "macos-x64", "macos-arm64"]
 task.run_auto_install = false
+task.timings = true
 cargo.binstall_native = true
 
 # Cargo использует официальные бинарники, а на macOS Intel собирает из исходников.
@@ -101,8 +102,12 @@ run = "pnpm exec tsp compile ."
 
 [tasks."api:generate"]
 description = "Сгенерировать OpenAPI и Fetch-клиент (из api/package.json: scripts.generate)"
+depends = ["api:generate-client"]
+
+[tasks."api:generate-client"]
+depends = ["api:build"]
 dir = "{{ config_root }}/api"
-run = [{ task = "api:build" }, "pnpm exec openapi-ts"]
+run = "pnpm exec openapi-ts"
 
 [tasks."api:check"]
 description = "Проверить форматирование и компиляцию TypeSpec (из api/package.json: scripts.check)"
@@ -119,9 +124,12 @@ run = 'pnpm exec tsp format "**/*.tsp"'
 
 [tasks."backend:api-generate"]
 description = "Обновить сохраняемые в Git Go-модели и маршруты API (из Makefile: api-generate)"
+depends = ["backend:api-generate-code"]
+
+[tasks."backend:api-generate-code"]
+depends = ["api:build"]
 dir = "{{ config_root }}/backend"
 run = [
-  { task = "api:build" },
   "go tool oapi-codegen --config oapi-models.yaml ../api/generated/openapi.yaml",
   "go tool oapi-codegen --config oapi-server.yaml ../api/generated/openapi.yaml",
 ]
@@ -147,7 +155,12 @@ dir = "{{ config_root }}/backend"
 run = "go vet ./..."
 
 [tasks."backend:test"]
-description = "Запустить все тесты backend с детектором гонок и PostgreSQL; нужен Docker (из Makefile: test)"
+description = "Запустить все тесты backend с PostgreSQL; нужен Docker"
+dir = "{{ config_root }}/backend"
+run = "go test -count=1 ./..."
+
+[tasks."backend:test-race"]
+description = "Запустить все тесты backend с детектором гонок; нужен Docker"
 dir = "{{ config_root }}/backend"
 run = "go test -race -count=1 ./..."
 
@@ -175,15 +188,12 @@ dir = "{{ config_root }}/backend"
 run = "govulncheck ./..."
 
 [tasks."backend:check"]
-description = "Последовательно выполнить все проверки качества backend (из Makefile: check)"
-run = [
-  { task = "backend:lint" },
-  { task = "backend:sqlc-check" },
-  { task = "backend:vet" },
-  { task = "backend:test" },
-  { task = "backend:build" },
-  { task = "backend:vuln" },
-]
+description = "Статические проверки backend"
+run = [{ task = "backend:lint" }, { task = "backend:vet" }]
+
+[tasks."backend:test-ci"]
+description = "Vet, обычные тесты и сборка backend"
+run = [{ task = "backend:vet" }, { task = "backend:test" }, { task = "backend:build" }]
 
 [tasks."backend:migrate-up"]
 description = "Применить миграции к явно заданной DATABASE_URL (из Makefile: migrate-up)"
@@ -207,9 +217,12 @@ run = "pnpm exec tsc -b"
 
 [tasks."frontend:build"]
 description = "Сгенерировать клиент, проверить TypeScript и собрать frontend (из frontend/package.json: scripts.build)"
+depends = ["api:generate-client"]
+run = [{ task = "frontend:build-generated" }]
+
+[tasks."frontend:build-generated"]
 dir = "{{ config_root }}/frontend"
 run = [
-  { task = "api:generate" },
   { task = "frontend:typecheck" },
   "pnpm exec vite build",
 ]
@@ -248,11 +261,17 @@ run = "pnpm exec oxfmt --check ."
 
 [tasks."frontend:check"]
 description = "Проверить контракт, генерацию клиента, линтеры и форматирование (из frontend/package.json: scripts.check)"
+depends = ["api:generate-client"]
 run = [
   { task = "api:check" },
-  { task = "api:generate" },
+  { task = "frontend:check-generated" },
+]
+
+[tasks."frontend:check-generated"]
+run = [
   { task = "frontend:lint" },
   { task = "frontend:format-check" },
+  { task = "frontend:typecheck" },
 ]
 
 [tasks."frontend:preview"]
@@ -267,7 +286,8 @@ run = "pnpm exec playwright test"
 
 [tasks."frontend:test-smoke"]
 description = "Собрать frontend и запустить браузерные smoke-тесты; нужен Docker (из frontend/package.json: scripts.test:smoke)"
-run = [{ task = "frontend:build" }, { task = "frontend:test" }]
+depends = ["frontend:build"]
+run = [{ task = "frontend:test" }]
 
 [tasks."container:test"]
 description = "Собрать production-образ и проверить его с отдельной PostgreSQL (из Makefile: test-container)"
@@ -278,13 +298,22 @@ description = "Установить локальный commit-msg hook репо�
 run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --force-local; fi'
 
 [tasks.check]
-description = "Проверить качество, сборку и браузерные сценарии backend/frontend (из scripts/setup-worktree.sh: SETUP_VERIFY=1)"
-run = [
-  { task = "backend:check" },
-  { task = "frontend:check" },
-  { task = "frontend:test-smoke" },
-]
+description = "Статические проверки проекта"
+depends = ["api:check", "check:frontend-quality", "backend:lint"]
 
-[tasks."workflow:test"]
-description = "Проверить поведение команд окружения разработки (новая задача)"
-run = "node --test scripts/tests/*.test.mjs"
+[tasks."checks"]
+description = "Проверить актуальность сохраняемой генерации"
+depends = ["check:go-api", "backend:sqlc-check"]
+
+[tasks."check:go-api"]
+description = "Проверить свежесть сгенерированного Go API"
+depends = ["backend:api-generate-code"]
+run = "git diff --exit-code -- backend/internal/api/models.gen.go backend/internal/api/server.gen.go"
+
+[tasks."check:frontend-quality"]
+depends = ["api:generate-client"]
+run = [{ task = "frontend:check-generated" }]
+
+[tasks."ci:test"]
+description = "Проверить поведение статуса CI и ошибки команд"
+run = "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s .github/tests -v"

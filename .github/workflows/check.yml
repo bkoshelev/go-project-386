@@ -1,0 +1,153 @@
+name: check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  actions: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  MISE_NO_HOOKS: "1"
+  GOTOOLCHAIN: local
+
+jobs:
+  lint:
+    outputs:
+      mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        id: mise
+        with:
+          version: 2026.10.17
+          install_args: --locked go node pnpm golangci-lint
+      - run: mise run api:deps
+      - run: mise run frontend:deps
+      - run: mise run backend:deps
+      - name: Run checks
+        run: mise run check 2>&1 | tee job.log
+      - run: mise run ci:test
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lint-failure
+          path: job.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  checks:
+    outputs:
+      mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        id: mise
+        with:
+          version: 2026.10.17
+          install_args: --locked go node pnpm sqlc
+      - run: mise run api:deps
+      - run: mise run backend:deps
+      - name: Run checks
+        run: mise run checks 2>&1 | tee job.log
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: checks-failure
+          path: job.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  test:
+    outputs:
+      mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        id: mise
+        with:
+          version: 2026.10.17
+          install_args: --locked go
+      - run: mise run backend:deps
+      - name: Run checks
+        run: mise run backend:test-ci 2>&1 | tee job.log
+      - name: Upload failure log
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: backend-test-failure
+          path: job.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  test-frontend:
+    outputs:
+      mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: jdx/mise-action@v5
+        id: mise
+        with:
+          version: 2026.10.17
+          install_args: --locked go node pnpm
+      - run: mise run api:deps
+      - run: mise run frontend:deps
+      - run: mise run backend:deps
+      - run: docker info && google-chrome --version
+      - run: mise run frontend:test-smoke 2>&1 | tee job.log
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: frontend-diagnostics
+          path: |
+            frontend/test-results/
+            job.log
+          if-no-files-found: warn
+          retention-days: 7
+
+  check:
+    if: always()
+    needs: [lint, checks, test, test-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Record available job data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          gh api --paginate --slurp "repos/$REPOSITORY/actions/runs/$RUN_ID/attempts/$RUN_ATTEMPT/jobs?per_page=100" | jq --argjson needs "$NEEDS" '{jobs: [.[].jobs[]], groups: $needs, retries: "unavailable; see Playwright logs"}' > job-report.json || printf '%s\n' '{"jobs": "unavailable", "cache": "unavailable", "retries": "unavailable"}' > job-report.json
+      - uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: job-report
+          path: job-report.json
+          retention-days: 7
+      - name: Check required results
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: bash .github/scripts/check-results.sh

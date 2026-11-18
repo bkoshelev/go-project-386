@@ -114,9 +114,10 @@ backend из страницы на том же origin, SPA и `404`, порт ч
 запустить БД. При завершении, ошибке и SIGTERM/SIGINT удаляются её контейнеры,
 сеть, том и локальные теги образов; ручной проект `calendar` не затрагивается.
 Диагностика сохраняется в `artifacts/container-smoke/`, пароль и DSN маскируются.
-Workflow `container.yml` запускает ту же команду на push и pull request;
-при ошибке загружает диагностику как artifact. Существующие workflow
-frontend/backend выполняются независимо.
+Workflow `nightly.yml` запускает контейнерный smoke ежедневно в 02:17 UTC и
+вручную через GitHub Actions. Он выполняется независимо от race и govulncheck;
+при ошибке доступная диагностика сохраняется на 7 дней. На PR и push в main
+контейнерный smoke не запускается.
 
 ## Render
 
