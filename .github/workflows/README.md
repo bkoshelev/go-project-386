@@ -9,7 +9,7 @@ The hexlet-check.yml file is responsible for running these tests - do not delete
 `check.yml` на push в `main` и события pull request запускает `mise run check`
 в одном job. Он подготавливает инструменты и зависимости, проверяет доступность
 Docker и Chrome. Команда включает свежесть Go API, backend, frontend, браузерные
-тесты, контейнерный smoke и тесты команд окружения; независимые ветки выполняются
+тесты и контейнерный smoke; независимые ветки выполняются
 параллельно и не отменяются при ошибке другой ветки. При ошибке артефакт
 `check-diagnostics` содержит доступные контейнерные логи и результаты Playwright.
 Локально требуется Docker и Chromium из Playwright. Подробности контейнерного

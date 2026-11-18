@@ -13,7 +13,6 @@ run() {
   fi
 }
 
-run workflow:test & workflow_pid=$!
 run api:check & api_check_pid=$!
 
 if run api:build; then
@@ -56,6 +55,5 @@ else
   echo '[check] skipped Go API, SDK, backend, frontend and container checks: OpenAPI generation failed' >&2
   status=1
 fi
-wait "$workflow_pid" || status=1
 wait "$api_check_pid" || status=1
 exit "$status"

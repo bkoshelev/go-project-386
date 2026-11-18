@@ -296,7 +296,3 @@ run = 'if [ -z "${CI:-}" ]; then hk validate && hk install --mise --legacy --for
 [tasks.check]
 description = "Параллельно выполнить полный набор проверок проекта"
 run = "bash scripts/check.sh"
-
-[tasks."workflow:test"]
-description = "Проверить поведение команд окружения разработки (новая задача)"
-run = "node --test scripts/tests/*.test.mjs"

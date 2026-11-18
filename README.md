@@ -419,8 +419,8 @@ mise run frontend:test-smoke
 ### Бэкенд
 
 Команда `mise run check` параллельно выполняет проверку свежести Go API,
-`backend:check`, `frontend:check`, `frontend:test-smoke`, `container:test` и
-`workflow:test`. Для полного набора нужны установленные зависимости, работающий Docker
+`backend:check`, `frontend:check`, `frontend:test-smoke` и `container:test`.
+Для полного набора нужны установленные зависимости, работающий Docker
 и браузер Playwright (в CI используется предустановленный Chrome). Генерация OpenAPI,
 Go API и SDK выполняется по одному разу; Go-файлы сравниваются с индексом Git,
 поэтому незакоммиченные изменения в них могут привести к ошибке. При ошибке одной
