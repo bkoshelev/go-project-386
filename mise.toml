@@ -6,6 +6,7 @@ experimental = true
 lockfile = true
 lockfile_platforms = ["linux-x64", "linux-arm64", "macos-x64", "macos-arm64"]
 task.run_auto_install = false
+task.timings = true
 cargo.binstall_native = true
 
 # Cargo использует официальные бинарники, а на macOS Intel собирает из исходников.
