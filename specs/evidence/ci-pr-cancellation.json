@@ -1,0 +1,114 @@
+{
+  "plan": {
+    "created_at_utc": "2026-11-18T13:28:43.534600+00:00",
+    "previous_run": 44313964911,
+    "previous_sha": "081b7068ec36e668584bb1eaac6facacbb3d987c",
+    "new_sha": "f48942885273fa4272567cfadf4494cc462ff7b4",
+    "tree": "7256c022d945c9455da785a79da5f5983c2c0411",
+    "purpose": "verify newer pull_request run cancels in-progress predecessor"
+  },
+  "runs": [
+    {
+      "run_id": 44313964911,
+      "sha": "081b7068ec36e668584bb1eaac6facacbb3d987c",
+      "run_attempt": 1,
+      "url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911",
+      "created_at": "2026-11-18T13:27:52Z",
+      "status": "completed",
+      "conclusion": "cancelled",
+      "jobs": [
+        {
+          "name": "checks",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:27:55Z",
+          "completed_at": "2026-11-18T13:28:27Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911/job/134835059309"
+        },
+        {
+          "name": "test",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "started_at": "2026-11-18T13:27:55Z",
+          "completed_at": "2026-11-18T13:29:08Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911/job/134835059831"
+        },
+        {
+          "name": "test-frontend",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "started_at": "2026-11-18T13:27:55Z",
+          "completed_at": "2026-11-18T13:29:09Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911/job/134835059878"
+        },
+        {
+          "name": "lint",
+          "status": "completed",
+          "conclusion": "cancelled",
+          "started_at": "2026-11-18T13:27:55Z",
+          "completed_at": "2026-11-18T13:29:02Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911/job/134835059931"
+        },
+        {
+          "name": "check",
+          "status": "completed",
+          "conclusion": "failure",
+          "started_at": "2026-11-18T13:29:11Z",
+          "completed_at": "2026-11-18T13:29:23Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313964911/job/134835817479"
+        }
+      ]
+    },
+    {
+      "run_id": 44314128281,
+      "sha": "f48942885273fa4272567cfadf4494cc462ff7b4",
+      "run_attempt": 1,
+      "url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281",
+      "created_at": "2026-11-18T13:28:52Z",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "checks",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:29:25Z",
+          "completed_at": "2026-11-18T13:30:00Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281/job/134835950826"
+        },
+        {
+          "name": "lint",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:29:26Z",
+          "completed_at": "2026-11-18T13:30:42Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281/job/134835951239"
+        },
+        {
+          "name": "test",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:29:25Z",
+          "completed_at": "2026-11-18T13:30:54Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281/job/134835951452"
+        },
+        {
+          "name": "test-frontend",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:29:25Z",
+          "completed_at": "2026-11-18T13:32:36Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281/job/134835951498"
+        },
+        {
+          "name": "check",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-18T13:32:38Z",
+          "completed_at": "2026-11-18T13:32:44Z",
+          "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44314128281/job/134837834218"
+        }
+      ]
+    }
+  ]
+}
