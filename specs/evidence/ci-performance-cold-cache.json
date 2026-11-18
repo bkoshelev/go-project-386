@@ -1,0 +1,562 @@
+{
+  "plan": {
+    "created_at_utc": "2026-11-18T13:23:03.281326+00:00",
+    "candidate_sha": "9724270362b887846ea55b2e80acf15b3048a127",
+    "baseline_sha": "d891d6b6a43590498fda485f5a4167244dd26a59",
+    "event": "pull_request synchronize",
+    "runner": "ubuntu-latest",
+    "go_cache": "cold: no keys with prefix go-ci-experiment-v1 found before run; PR restore only",
+    "tool_cache": "existing mise caches; job outputs record hit or miss",
+    "planned_runs": 1
+  },
+  "run_id": 44313171746,
+  "run_attempt": 1,
+  "sha": "9724270362b887846ea55b2e80acf15b3048a127",
+  "url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746",
+  "event": "pull_request",
+  "status": "completed",
+  "conclusion": "success",
+  "created_at": "2026-11-18T13:23:10Z",
+  "check_completed_at": "2026-11-18T13:26:20Z",
+  "seconds_to_check": 190.0,
+  "jobs": [
+    {
+      "id": 134832297859,
+      "name": "checks",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-18T13:23:13Z",
+      "completed_at": "2026-11-18T13:23:43Z",
+      "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746/job/134832297859",
+      "runner_name": "GitHub Actions 1000002317",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-18T13:23:13Z",
+          "completed_at": "2026-11-18T13:23:15Z"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-18T13:23:15Z",
+          "completed_at": "2026-11-18T13:23:16Z"
+        },
+        {
+          "name": "Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-18T13:23:16Z",
+          "completed_at": "2026-11-18T13:23:20Z"
+        },
+        {
+          "name": "Run mise run api:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-18T13:23:20Z",
+          "completed_at": "2026-11-18T13:23:21Z"
+        },
+        {
+          "name": "Run actions/cache/restore@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-18T13:23:21Z",
+          "completed_at": "2026-11-18T13:23:22Z"
+        },
+        {
+          "name": "Run mise run backend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-18T13:23:22Z",
+          "completed_at": "2026-11-18T13:23:26Z"
+        },
+        {
+          "name": "Run checks",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-18T13:23:26Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        },
+        {
+          "name": "Upload failure log",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-11-18T13:23:41Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        },
+        {
+          "name": "Run actions/cache/save@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-11-18T13:23:41Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        },
+        {
+          "name": "Post Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-11-18T13:23:41Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-11-18T13:23:41Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-11-18T13:23:41Z",
+          "completed_at": "2026-11-18T13:23:41Z"
+        }
+      ]
+    },
+    {
+      "id": 134832298461,
+      "name": "test-frontend",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-18T13:23:13Z",
+      "completed_at": "2026-11-18T13:26:09Z",
+      "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746/job/134832298461",
+      "runner_name": "GitHub Actions 1000002318",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-18T13:23:14Z",
+          "completed_at": "2026-11-18T13:23:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-18T13:23:16Z",
+          "completed_at": "2026-11-18T13:23:16Z"
+        },
+        {
+          "name": "Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-18T13:23:16Z",
+          "completed_at": "2026-11-18T13:23:21Z"
+        },
+        {
+          "name": "Run mise run api:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-18T13:23:21Z",
+          "completed_at": "2026-11-18T13:23:23Z"
+        },
+        {
+          "name": "Run mise run frontend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-18T13:23:23Z",
+          "completed_at": "2026-11-18T13:23:25Z"
+        },
+        {
+          "name": "Run actions/cache/restore@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-18T13:23:25Z",
+          "completed_at": "2026-11-18T13:23:25Z"
+        },
+        {
+          "name": "Run mise run backend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-18T13:23:25Z",
+          "completed_at": "2026-11-18T13:23:29Z"
+        },
+        {
+          "name": "Run docker info && google-chrome --version",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-18T13:23:29Z",
+          "completed_at": "2026-11-18T13:23:32Z"
+        },
+        {
+          "name": "Run mise run frontend:test-smoke 2>&1 | tee job.log",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-18T13:23:32Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        },
+        {
+          "name": "Upload diagnostics",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10,
+          "started_at": "2026-11-18T13:26:06Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        },
+        {
+          "name": "Run actions/cache/save@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11,
+          "started_at": "2026-11-18T13:26:06Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        },
+        {
+          "name": "Post Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-11-18T13:26:06Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-11-18T13:26:06Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-11-18T13:26:06Z",
+          "completed_at": "2026-11-18T13:26:06Z"
+        }
+      ]
+    },
+    {
+      "id": 134832298479,
+      "name": "test",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-18T13:23:13Z",
+      "completed_at": "2026-11-18T13:24:41Z",
+      "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746/job/134832298479",
+      "runner_name": "GitHub Actions 1000002320",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-18T13:23:14Z",
+          "completed_at": "2026-11-18T13:23:16Z"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-18T13:23:16Z",
+          "completed_at": "2026-11-18T13:23:17Z"
+        },
+        {
+          "name": "Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-18T13:23:17Z",
+          "completed_at": "2026-11-18T13:23:21Z"
+        },
+        {
+          "name": "Run actions/cache/restore@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-18T13:23:21Z",
+          "completed_at": "2026-11-18T13:23:22Z"
+        },
+        {
+          "name": "Run mise run backend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-18T13:23:22Z",
+          "completed_at": "2026-11-18T13:23:25Z"
+        },
+        {
+          "name": "Run checks",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-18T13:23:25Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        },
+        {
+          "name": "Upload failure log",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 7,
+          "started_at": "2026-11-18T13:24:38Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        },
+        {
+          "name": "Run actions/cache/save@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-11-18T13:24:38Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        },
+        {
+          "name": "Post Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 15,
+          "started_at": "2026-11-18T13:24:38Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-11-18T13:24:38Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-11-18T13:24:38Z",
+          "completed_at": "2026-11-18T13:24:38Z"
+        }
+      ]
+    },
+    {
+      "id": 134832298491,
+      "name": "lint",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-18T13:23:13Z",
+      "completed_at": "2026-11-18T13:24:19Z",
+      "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746/job/134832298491",
+      "runner_name": "GitHub Actions 1000002319",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-18T13:23:14Z",
+          "completed_at": "2026-11-18T13:23:15Z"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-18T13:23:15Z",
+          "completed_at": "2026-11-18T13:23:17Z"
+        },
+        {
+          "name": "Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-18T13:23:17Z",
+          "completed_at": "2026-11-18T13:23:22Z"
+        },
+        {
+          "name": "Run mise run api:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-18T13:23:22Z",
+          "completed_at": "2026-11-18T13:23:23Z"
+        },
+        {
+          "name": "Run mise run frontend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-18T13:23:23Z",
+          "completed_at": "2026-11-18T13:23:25Z"
+        },
+        {
+          "name": "Run actions/cache/restore@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-11-18T13:23:25Z",
+          "completed_at": "2026-11-18T13:23:26Z"
+        },
+        {
+          "name": "Run mise run backend:deps",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-11-18T13:23:26Z",
+          "completed_at": "2026-11-18T13:23:30Z"
+        },
+        {
+          "name": "Run checks",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-11-18T13:23:30Z",
+          "completed_at": "2026-11-18T13:24:15Z"
+        },
+        {
+          "name": "Run mise run ci:test",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-11-18T13:24:15Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        },
+        {
+          "name": "Upload failure log",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 10,
+          "started_at": "2026-11-18T13:24:16Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        },
+        {
+          "name": "Run actions/cache/save@v5",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 11,
+          "started_at": "2026-11-18T13:24:16Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        },
+        {
+          "name": "Post Run jdx/mise-action@v5",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21,
+          "started_at": "2026-11-18T13:24:16Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22,
+          "started_at": "2026-11-18T13:24:16Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23,
+          "started_at": "2026-11-18T13:24:16Z",
+          "completed_at": "2026-11-18T13:24:16Z"
+        }
+      ]
+    },
+    {
+      "id": 134834050015,
+      "name": "check",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-11-18T13:26:12Z",
+      "completed_at": "2026-11-18T13:26:20Z",
+      "html_url": "https://github.com/bkoshelev/go-project-386/actions/runs/44313171746/job/134834050015",
+      "runner_name": "GitHub Actions 1000002321",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-11-18T13:26:13Z",
+          "completed_at": "2026-11-18T13:26:13Z"
+        },
+        {
+          "name": "Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-11-18T13:26:13Z",
+          "completed_at": "2026-11-18T13:26:14Z"
+        },
+        {
+          "name": "Record available job data",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-11-18T13:26:14Z",
+          "completed_at": "2026-11-18T13:26:17Z"
+        },
+        {
+          "name": "Run actions/upload-artifact@v6",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-11-18T13:26:17Z",
+          "completed_at": "2026-11-18T13:26:18Z"
+        },
+        {
+          "name": "Check required results",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-11-18T13:26:18Z",
+          "completed_at": "2026-11-18T13:26:18Z"
+        },
+        {
+          "name": "Post Run actions/checkout@v7",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10,
+          "started_at": "2026-11-18T13:26:18Z",
+          "completed_at": "2026-11-18T13:26:18Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11,
+          "started_at": "2026-11-18T13:26:18Z",
+          "completed_at": "2026-11-18T13:26:18Z"
+        }
+      ]
+    }
+  ],
+  "mise_cache": {
+    "lint": "true",
+    "checks": "true",
+    "test": "true",
+    "test-frontend": "true"
+  },
+  "go_cache": {
+    "lint": "miss; confirmed in job log",
+    "checks": "miss; confirmed in job log",
+    "test": "miss; confirmed in job log",
+    "test-frontend": "miss; confirmed in job log"
+  },
+  "retries": "unavailable; see Playwright logs",
+  "interpretation": "Cold result only; it is not a warmed five-run comparison and cannot establish a 10 percent gain."
+}

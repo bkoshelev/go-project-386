@@ -25,7 +25,6 @@ jobs:
   lint:
     outputs:
       mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
-      go-cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -37,13 +36,6 @@ jobs:
           install_args: --locked go node pnpm golangci-lint
       - run: mise run api:deps
       - run: mise run frontend:deps
-      - uses: actions/cache/restore@v5
-        id: go-cache
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-lint-1.26.11-${{ hashFiles('backend/go.sum') }}
       - run: mise run backend:deps
       - name: Run checks
         run: mise run check 2>&1 | tee job.log
@@ -57,18 +49,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - uses: actions/cache/save@v5
-        if: success() && github.event_name == 'push'
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-lint-1.26.11-${{ hashFiles('backend/go.sum') }}
-
   checks:
     outputs:
       mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
-      go-cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -79,13 +62,6 @@ jobs:
           version: 2026.10.17
           install_args: --locked go node pnpm sqlc
       - run: mise run api:deps
-      - uses: actions/cache/restore@v5
-        id: go-cache
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-checks-1.26.11-${{ hashFiles('backend/go.sum') }}
       - run: mise run backend:deps
       - name: Run checks
         run: mise run checks 2>&1 | tee job.log
@@ -98,18 +74,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - uses: actions/cache/save@v5
-        if: success() && github.event_name == 'push'
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-checks-1.26.11-${{ hashFiles('backend/go.sum') }}
-
   test:
     outputs:
       mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
-      go-cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -119,13 +86,6 @@ jobs:
         with:
           version: 2026.10.17
           install_args: --locked go
-      - uses: actions/cache/restore@v5
-        id: go-cache
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-test-1.26.11-${{ hashFiles('backend/go.sum') }}
       - run: mise run backend:deps
       - name: Run checks
         run: mise run backend:test-ci 2>&1 | tee job.log
@@ -138,18 +98,9 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
-      - uses: actions/cache/save@v5
-        if: success() && github.event_name == 'push'
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-test-1.26.11-${{ hashFiles('backend/go.sum') }}
-
   test-frontend:
     outputs:
       mise-cache-hit: ${{ steps.mise.outputs.cache-hit }}
-      go-cache-hit: ${{ steps.go-cache.outputs.cache-hit }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -161,13 +112,6 @@ jobs:
           install_args: --locked go node pnpm
       - run: mise run api:deps
       - run: mise run frontend:deps
-      - uses: actions/cache/restore@v5
-        id: go-cache
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-test-frontend-1.26.11-${{ hashFiles('backend/go.sum') }}
       - run: mise run backend:deps
       - run: docker info && google-chrome --version
       - run: mise run frontend:test-smoke 2>&1 | tee job.log
@@ -181,14 +125,6 @@ jobs:
             job.log
           if-no-files-found: warn
           retention-days: 7
-
-      - uses: actions/cache/save@v5
-        if: success() && github.event_name == 'push'
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: go-ci-experiment-v1-${{ runner.os }}-${{ runner.arch }}-test-frontend-1.26.11-${{ hashFiles('backend/go.sum') }}
 
   check:
     if: always()
