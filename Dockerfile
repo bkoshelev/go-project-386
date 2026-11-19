@@ -61,9 +61,9 @@ WORKDIR /app
 COPY --from=frontend /src/frontend/dist ./frontend
 # Копируем сервер и утилиту миграций из стадии сборки backend.
 COPY --from=backend /src/backend/bin/server /src/backend/bin/migrate /app/
-# Задаём порт HTTP-сервера и production-режим Gin по умолчанию.
-ENV PORT=8080 GIN_MODE=release
-# Объявляем используемый приложением порт внутри контейнера.
+# Задаём production-режим Gin.
+ENV GIN_MODE=release
+# Метаданные образа; фактический HTTP-порт задаётся через PORT.
 EXPOSE 8080
 # Запускаем сервер при старте контейнера.
 CMD ["/app/server"]

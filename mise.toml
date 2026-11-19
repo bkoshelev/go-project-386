@@ -49,7 +49,7 @@ options.database = "calendar"
 
 [daemons.backend]
 init = "mise run backend:dist"
-run = 'export HTTP_ADDR="127.0.0.1:$BACKEND_PORT"; exec backend/bin/server'
+run = 'export PORT="$BACKEND_PORT"; exec backend/bin/server'
 port = { auto = true, base = 8080 }
 proxy = false
 depends = ["postgres"]

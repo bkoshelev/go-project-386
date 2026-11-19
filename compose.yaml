@@ -19,9 +19,9 @@ services:
     build: .
     environment:
       DATABASE_URL: postgres://calendar:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/calendar?sslmode=disable
-      PORT: ${PORT:-8080}
+      PORT: ${PORT:?Set PORT}
     ports:
-      - "127.0.0.1:${APP_HOST_PORT:-8080}:${PORT:-8080}"
+      - "127.0.0.1:${APP_HOST_PORT:-8080}:${PORT:?Set PORT}"
     depends_on:
       db:
         condition: service_healthy

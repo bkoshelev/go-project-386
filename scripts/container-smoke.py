@@ -22,7 +22,7 @@ ENV = {
     **os.environ,
     "POSTGRES_PASSWORD": PASSWORD,
     "APP_HOST_PORT": "0",
-    "PORT": "8090",
+    "PORT": "10000",
     "COMPOSE_PROJECT_NAME": PROJECT,
     "COMPOSE_BAKE": "false",
 }
@@ -102,17 +102,45 @@ def smoke():
     print(f"Building and testing isolated project {PROJECT}", flush=True)
     run(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=15)
     compose("build", "app", "app2", timeout=900)
+    image = PROJECT + "-app"
+    image_env = run(["docker", "image", "inspect", "--format", "{{json .Config.Env}}", image]).stdout
+    if any(item.startswith("PORT=") for item in json.loads(image_env)):
+        raise RuntimeError("image contains a default PORT")
+    without_port = {**ENV, "PORT": ""}
+    config = compose("config", check=False, env=without_port)
+    if config.returncode == 0:
+        raise RuntimeError("Compose accepted a missing PORT")
+    valid_dsn = "postgres://calendar:unused@db:5432/calendar?sslmode=disable"
+    for variables, expected in [
+        ([], "PORT"),
+        (["-e", "HTTP_ADDR=0.0.0.0:9999", "-e", "DATABASE_URL=" + valid_dsn], "PORT"),
+        (["-e", "PORT=", "-e", "DATABASE_URL=" + valid_dsn], "PORT"),
+        (["-e", "PORT=  ", "-e", "DATABASE_URL=" + valid_dsn], "PORT"),
+        (["-e", "PORT=bad", "-e", "HTTP_ADDR=0.0.0.0:9999", "-e", "DATABASE_URL=" + valid_dsn], "PORT"),
+        (["-e", "PORT=10000"], "DATABASE_URL"),
+        (["-e", "PORT=10000", "-e", "DATABASE_URL="], "DATABASE_URL"),
+        (["-e", "PORT=10000", "-e", "DATABASE_URL=  "], "DATABASE_URL"),
+    ]:
+        result = run(["docker", "run", "--rm", "--network", "none", *variables, image], check=False)
+        if result.returncode != 1 or expected not in result.stdout:
+            raise RuntimeError(f"missing or invalid {expected} did not stop startup")
     compose("up", "-d", "--wait", "--wait-timeout", "60", "db")
     # Both instances start while the database is temporarily unavailable.
     compose("stop", "db")
     compose("up", "-d", "--no-deps", "app", "app2")
-    first, second = base_url("app", 8090), base_url("app2", 8091)
+    first, second = base_url("app", 10000), base_url("app2", 8091)
     time.sleep(1)
     if status(first + "/healthz") != 0:
         raise RuntimeError("HTTP started before database preparation")
     compose("start", "db")
     wait_status(first + "/readyz", 200)
     wait_status(second + "/readyz", 200)
+    for service, port in [("app", 10000), ("app2", 8091)]:
+        for path in ("/", "/api/event-types", "/readyz"):
+            compose("exec", "-T", "db", "wget", "-qO-", f"http://{service}:{port}{path}")
+    other = compose("exec", "-T", "db", "wget", "-qO-", "http://app:9999/readyz", check=False)
+    if other.returncode == 0:
+        raise RuntimeError("HTTP_ADDR changed the listening port")
     if sql("SELECT count(*) FROM goose_db_version WHERE version_id=1 AND is_applied") != "1":
         raise RuntimeError("migration was not applied exactly once")
     sql("INSERT INTO example_records(value) VALUES ('container-smoke-persistence')")
@@ -121,7 +149,11 @@ def smoke():
         "node", "frontend/node_modules/@playwright/test/cli.js", "test",
         "--config", "frontend/playwright.container.config.ts",
     ], env={**ENV, "CONTAINER_BASE_URL": first}, timeout=120)
-    compose("run", "--rm", "--no-deps", "-T", "app", "/app/migrate", "status")
+    run(
+        ["docker", "run", "--rm", "--network", PROJECT + "_default",
+         "-e", "DATABASE_URL", image, "/app/migrate", "status"],
+        env={**ENV, "DATABASE_URL": f"postgres://calendar:{PASSWORD}@db:5432/calendar?sslmode=disable"},
+    )
     for dsn in ["", "postgres://user:hidden@db:invalid/private"]:
         invalid = compose(
             "run", "--rm", "--no-deps", "-T", "-e", "DATABASE_URL=" + dsn,
@@ -132,7 +164,7 @@ def smoke():
         if "hidden" in invalid.stdout or "private" in invalid.stdout:
             raise RuntimeError("invalid configuration leaked connection details")
     compose("restart", "app")
-    first = base_url("app", 8090)
+    first = base_url("app", 10000)
     wait_status(first + "/readyz", 200)
     if sql("SELECT value FROM example_records") != "container-smoke-persistence":
         raise RuntimeError("restart lost stored data")
@@ -151,7 +183,7 @@ def smoke():
     time.sleep(1)
     if not compose("ps", "--status", "running", "--quiet", "app").stdout.strip():
         raise RuntimeError("application exited instead of waiting for the database")
-    if status(base_url("app", 8090) + "/healthz") != 0:
+    if status(base_url("app", 10000) + "/healthz") != 0:
         raise RuntimeError("HTTP started while the database was unavailable")
     compose("stop", "--timeout", "5", "app")
     assert_exit("app", 1)

@@ -77,7 +77,7 @@ export const test = base.extend<{ backend: Backend }, { environment: Environment
   ],
   backend: async ({ environment }, provide, testInfo) => {
     const databaseName = `test_${randomUUID().replaceAll("-", "")}`;
-    const port = await availablePort();
+    const port = await availablePort("0.0.0.0");
     const url = `http://127.0.0.1:${port}`;
     let processHandle: ChildProcess | undefined;
     let logs = "";
@@ -92,6 +92,12 @@ export const test = base.extend<{ backend: Backend }, { environment: Environment
       await expect
         .poll(
           async () => {
+            if (
+              processHandle &&
+              (processHandle.exitCode !== null || processHandle.signalCode !== null)
+            ) {
+              throw new Error(`Backend exited before readiness: ${logs}`);
+            }
             try {
               return (await fetch(`${url}/readyz`)).status;
             } catch {
@@ -107,7 +113,7 @@ export const test = base.extend<{ backend: Backend }, { environment: Environment
         cwd: environment.directory,
         env: {
           ...process.env,
-          HTTP_ADDR: `127.0.0.1:${port}`,
+          PORT: String(port),
           DATABASE_URL: `postgres://postgres:browser_test@127.0.0.1:${environment.databasePort}/${databaseName}?sslmode=disable`,
         },
         stdio: ["ignore", "pipe", "pipe"],
@@ -173,9 +179,9 @@ export const test = base.extend<{ backend: Backend }, { environment: Environment
 
 export { expect };
 
-async function availablePort() {
+async function availablePort(host = "127.0.0.1") {
   const reservation = createServer();
-  reservation.listen(0, "127.0.0.1");
+  reservation.listen(0, host);
   await once(reservation, "listening");
   const address = reservation.address();
   if (!address || typeof address === "string") throw new Error("No test port");
