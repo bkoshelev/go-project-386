@@ -8,7 +8,7 @@
     "@mantine/dates": "9.6.1",
     "@mantine/hooks": "9.6.1",
     "@xstate/react": "6.1.0",
-    "dayjs": "1.11.19",
+    "dayjs": "1.11.23",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "xstate": "5.33.3"
