@@ -177,7 +177,7 @@ importers:
         version: 9.6.1(react@19.3.0)
       '@xstate/react':
         specifier: 6.1.0
-        version: 6.1.0(@types/react@19.2.11)(react@19.3.0)(xstate@5.33.3)
+        version: 6.1.0(@types/react@19.2.11)(react@19.3.0)(xstate@5.33.4)
       dayjs:
         specifier: 1.11.19
         version: 1.11.19
@@ -188,8 +188,8 @@ importers:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
       xstate:
-        specifier: 5.33.3
-        version: 5.33.3
+        specifier: 5.33.4
+        version: 5.33.4
     devDependencies:
       '@playwright/test':
         specifier: 1.63.0
@@ -1623,8 +1623,8 @@ packages:
     resolution: {integrity: sha512-OTIk8iR8/aCRWBqvxrzxR0hgxWpnYBblY1S5hDWBQfk/VFmJwzmJgQFN3WsoUKHISv2eAwe+PpbUzyL1CKTLXg==}
     engines: {node: ^20.17.0 || >=22.9.0}
 
-  xstate@5.33.3:
-    resolution: {integrity: sha512-AnDRjS/GyKHmbA1PyhVCYBqYsA7EGe3KGgeD0ht3NFsXzoz7leX/HQDFX9QlHFJ/ltLHPsgChJYwPzRvB/0b4g==}
+  xstate@5.33.4:
+    resolution: {integrity: sha512-eGNMu3BNqU0Z85P+ouYG5OCZqIABU+QsW6vUieFt9p9gOGs3C+BL10Exg7XdRPSXPQKlP6XoYpYf93r9VmW8mQ==}
 
 snapshots:
 
@@ -2046,13 +2046,13 @@ snapshots:
       '@rolldown/pluginutils': 1.0.1
       vite: 8.3.3(@types/node@24.13.4)
 
-  '@xstate/react@6.1.0(@types/react@19.2.11)(react@19.3.0)(xstate@5.33.3)':
+  '@xstate/react@6.1.0(@types/react@19.2.11)(react@19.3.0)(xstate@5.33.4)':
     dependencies:
       react: 19.3.0
       use-isomorphic-layout-effect: 1.2.1(@types/react@19.2.11)(react@19.3.0)
       use-sync-external-store: 1.7.0(react@19.3.0)
     optionalDependencies:
-      xstate: 5.33.3
+      xstate: 5.33.4
     transitivePeerDependencies:
       - '@types/react'
 
@@ -2706,4 +2706,4 @@ snapshots:
     dependencies:
       signal-exit: 4.1.0
 
-  xstate@5.33.3: {}
+  xstate@5.33.4: {}
